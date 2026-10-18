@@ -1,0 +1,29 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="gBurn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F8A23E"/><stop offset=".55" stop-color="#E4552F"/><stop offset="1" stop-color="#B42F1F"/>
+    </linearGradient>
+    <pattern id="gHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="#F3D1CC"/><path d="M0 0v6" stroke="#C23E37" stroke-width="2"/>
+    </pattern>
+  </defs>
+</svg>
+<header class="appbar">
+  <div class="appbar-in">
+    <button class="brand" id="homeBtn" type="button" aria-label="Ana menü">
+      <svg class="brand-mark" viewBox="0 0 34 34" aria-hidden="true">
+        <rect x="1" y="1" width="32" height="32" rx="9" fill="#0A7A72"/>
+        <path d="M7 12h20M7 17h20M7 22h20M12 7v20M17 7v20M22 7v20" stroke="#fff" stroke-opacity=".28" stroke-width="1"/>
+        <rect x="4" y="14" width="26" height="6" rx="1.5" fill="#E8DCBC"/>
+        <path d="M7 20l4-6M12 20l4-6M17 20l4-6M22 20l4-6" stroke="#3A2E21" stroke-width="1.6"/>
+      </svg>
+      <b>Yara Bakımı Atölyesi</b>
+    </button>
+    <span class="bar-sp"></span>
+    <span class="pill" id="starPill" title="Toplam yıldız"></span>
+    <button class="icon-btn" id="soundBtn" type="button" aria-label="Sesi kapat"></button>
+  </div>
+</header>
+<div id="app"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
