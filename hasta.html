@@ -1,0 +1,817 @@
+<title>Yara Bakım Masası</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Hastalar için resimli, adım adım yara bakımı oyunu: ameliyat yarası pansumanı, küçük yanıkta ilk yardım, bası yarasından korunma.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;600;700;800&display=swap">
+<style>
+/* Yerleşim: oyuncak masası. Üstte sahne (hasta), yanında hemşire balonu, altta ahşap masa üstünde malzemeler.
+   Tek, aydınlık bir görsel dünya (bilinçli olarak tek tema). */
+:root{
+  --bg:#EAF6F1; --bg-2:#DCEFE7; --card:#FFFFFF; --ink:#22314A; --ink-2:#5B6C83; --line:#D3E5DD;
+  --coral:#FF7563; --coral-soft:#FFE4DE; --sky:#3FA2DB; --sky-soft:#DDF0FB; --sun:#FFC64A; --mint:#22A88F; --mint-soft:#D4F2EA;
+  --wood:#EBC796; --wood-2:#D6A86F; --wood-3:#B8854B;
+  --f-display:"Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"Nunito","Segoe UI",system-ui,sans-serif;
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 var(--f-body);-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(circle at 12% 8%,#F6FBF9 0 140px,transparent 141px),radial-gradient(circle at 92% 30%,#E2F3FB 0 180px,transparent 181px),radial-gradient(circle at 70% 96%,#FFF3DA 0 160px,transparent 161px)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:4px solid var(--sky);outline-offset:3px;border-radius:12px}
+h1,h2,h3{font-family:var(--f-display);margin:0;line-height:1.08;text-wrap:balance;font-weight:800}
+p{margin:0}
+
+.wrap{max-width:1180px;margin:0 auto;padding-block:18px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.logo{display:flex;align-items:center;gap:10px;background:none;border:0;cursor:pointer;padding:4px}
+.logo svg{width:44px;height:44px}
+.logo b{font-family:var(--f-display);font-size:1.35rem;font-weight:800;white-space:nowrap}
+.sp{flex:1}
+.round-btn{width:48px;height:48px;border-radius:16px;border:2px solid var(--line);background:var(--card);display:grid;place-items:center;cursor:pointer;box-shadow:0 3px 0 var(--line)}
+.round-btn svg{width:24px;height:24px}
+.round-btn:active{transform:translateY(2px);box-shadow:none}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:54px;padding:0 24px;border-radius:18px;border:0;
+  background:var(--card);font-weight:800;font-size:1.05rem;cursor:pointer;box-shadow:0 4px 0 var(--line);transition:transform .12s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.btn.main{background:var(--coral);color:#fff;box-shadow:0 4px 0 #D9503F}
+.btn.blue{background:var(--sky);color:#fff;box-shadow:0 4px 0 #2A7FB2}
+
+/* ana sayfa */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:24px;align-items:center;margin:8px 0 26px}
+.hero h1{font-size:clamp(2.4rem,6vw,4.2rem);letter-spacing:-.01em}
+.hero h1 span{color:var(--coral)}
+.hero p{margin-top:12px;font-size:1.15rem;color:var(--ink-2);max-width:46ch}
+.hero-art{background:var(--card);border-radius:32px;padding:14px;box-shadow:0 18px 40px -22px rgba(34,49,74,.4);min-width:0}
+.hero-art svg{display:block;width:100%;height:auto;border-radius:22px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.scn{text-align:left;border:0;background:var(--card);border-radius:28px;padding:14px;cursor:pointer;display:grid;gap:10px;
+  box-shadow:0 6px 0 var(--line);transition:transform .2s;min-width:0}
+.scn:hover{transform:translateY(-4px) rotate(-.4deg)}
+.scn-art{border-radius:20px;overflow:hidden;background:var(--bg-2)}
+.scn-art svg{display:block;width:100%;height:auto}
+.scn h3{font-size:1.4rem;padding:0 6px}
+.scn p{color:var(--ink-2);padding:0 6px;font-size:.98rem}
+.scn-foot{display:flex;justify-content:space-between;align-items:center;padding:4px 6px 4px}
+.tag{font-weight:800;font-size:.85rem;padding:5px 12px;border-radius:999px;background:var(--mint-soft);color:#11705F}
+.stars{display:inline-flex;gap:2px}
+.stars svg{width:24px;height:24px}
+
+/* oyun ekranı */
+.play{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);grid-template-areas:"head head" "stage nurse" "table table";gap:16px}
+.play-head{grid-area:head;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.play-head h1{font-size:clamp(1.4rem,3.4vw,2rem)}
+.strip{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.dot{width:38px;height:38px;border-radius:50%;background:var(--card);border:3px solid var(--line);display:grid;place-items:center;font-family:var(--f-display);font-weight:800;color:var(--ink-2)}
+.dot svg{width:26px;height:26px}
+.dot.now{border-color:var(--coral);color:var(--coral);animation:bob 1.2s ease-in-out infinite}
+.dot.done{border-color:var(--mint);background:var(--mint-soft)}
+.stage{grid-area:stage;position:relative;background:var(--card);border-radius:30px;padding:12px;box-shadow:0 18px 40px -24px rgba(34,49,74,.45);min-width:0}
+.stage svg.scene{display:block;width:100%;height:auto;border-radius:22px}
+.stage.drop{outline:5px dashed var(--sky);outline-offset:-6px}
+.stage-cap{display:none}
+.face{position:absolute;top:22px;left:22px;width:76px;height:76px;border-radius:50%;background:#fff;box-shadow:0 4px 0 var(--line);display:grid;place-items:center}
+.face svg{width:68px;height:68px}
+.nurse{grid-area:nurse;display:flex;flex-direction:column;gap:12px;min-width:0}
+.nurse-top{display:flex;gap:12px;align-items:flex-end}
+.nurse-top svg{width:84px;height:84px;flex:none}
+.nurse-top b{font-family:var(--f-display);font-size:1.15rem}
+.nurse-top small{display:block;color:var(--ink-2);font-weight:700}
+.bubble{position:relative;background:var(--card);border-radius:24px;padding:18px 20px;box-shadow:0 6px 0 var(--line);font-size:1.08rem;animation:pop .35s}
+.bubble::before{content:"";position:absolute;top:-12px;left:30px;border:12px solid transparent;border-top:0;border-bottom-color:var(--card)}
+.bubble h2{font-size:1.45rem;margin-bottom:6px}
+.bubble .why{margin-top:10px;padding:12px 14px;border-radius:16px;background:var(--sky-soft);font-size:1rem}
+.bubble.oops{background:var(--coral-soft)}
+.bubble.oops::before{border-bottom-color:var(--coral-soft)}
+.bubble.yay{background:var(--mint-soft)}
+.bubble.yay::before{border-bottom-color:var(--mint-soft)}
+.nurse-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+.table{grid-area:table;position:relative;border-radius:30px;padding:22px 18px 26px;
+  background:linear-gradient(180deg,var(--wood) 0%,var(--wood-2) 100%);box-shadow:inset 0 -10px 0 var(--wood-3),0 18px 30px -20px rgba(80,50,20,.6)}
+.table::before{content:"";position:absolute;inset:12px 14px 22px;border-radius:22px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.08) 0 2px,transparent 2px 46px);pointer-events:none}
+.table-title{position:relative;font-family:var(--f-display);font-weight:800;color:#6B4419;margin:0 0 10px 6px;font-size:1.05rem}
+.items{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:12px}
+.item{position:relative;touch-action:none;user-select:none;-webkit-user-select:none;display:grid;justify-items:center;gap:2px;padding:10px 6px 10px;border-radius:22px;border:0;
+  background:rgba(255,255,255,.88);cursor:grab;box-shadow:0 5px 0 rgba(120,80,30,.35);transition:transform .15s}
+.item:hover{transform:translateY(-4px) rotate(-2deg)}
+.item svg{width:74px;height:74px}
+.item span{font-weight:800;font-size:.92rem;line-height:1.15;text-align:center}
+.item.used{background:rgba(255,255,255,.6)}
+.item.used::after{content:"✓";position:absolute;top:6px;right:8px;width:24px;height:24px;border-radius:50%;background:var(--mint);color:#fff;font-size:.8rem;display:grid;place-items:center;font-weight:800}
+.item.hint{animation:hint 1s ease-in-out 3}
+.item.wiggle{animation:wiggle .5s}
+.item.dragging{opacity:.35}
+.flyer{position:fixed;left:0;top:0;z-index:500;pointer-events:none;width:84px;height:84px}
+.flyer svg{width:100%;height:100%}
+
+/* son ekran */
+.done{display:grid;gap:22px;justify-items:center;text-align:center;max-width:1000px;margin:0 auto}
+.done h1{font-size:clamp(2.2rem,6vw,3.4rem)}
+.done .big-face svg{width:150px;height:150px}
+.recap{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;width:100%;text-align:left}
+.rc{background:var(--card);border-radius:22px;padding:14px;display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;box-shadow:0 5px 0 var(--line)}
+.rc svg{width:58px;height:58px}
+.rc b{display:block;font-family:var(--f-display);font-size:1.1rem;line-height:1.15}
+.rc small{color:var(--ink-2);font-weight:600;font-size:.9rem}
+.rc .n{font-family:var(--f-display);font-weight:800;color:var(--coral)}
+.warn{width:100%;background:#FFF4E6;border-radius:26px;padding:18px;display:grid;gap:12px;text-align:left;border:3px dashed #F4B266}
+.warn h2{font-size:1.5rem}
+.warn-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.wl{display:flex;gap:10px;align-items:center;background:#fff;border-radius:16px;padding:10px 12px;font-weight:700}
+.wl svg{width:44px;height:44px;flex:none}
+.row-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+/* iyileşme takvimi */
+.tl{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px;align-items:start}
+.tl-art{background:var(--card);border-radius:30px;padding:12px;box-shadow:0 18px 40px -24px rgba(34,49,74,.45)}
+.tl-art svg{display:block;width:100%;height:auto;border-radius:22px}
+.tl-steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-top:14px}
+.tl-steps button{border:0;border-radius:14px;padding:10px 4px;background:var(--card);font-weight:800;font-size:.85rem;cursor:pointer;box-shadow:0 4px 0 var(--line);line-height:1.15}
+.tl-steps button.on{background:var(--sky);color:#fff;box-shadow:0 4px 0 #2A7FB2}
+input[type=range]{width:100%;accent-color:var(--coral);margin-top:12px;height:28px}
+.tl-card{background:var(--card);border-radius:26px;padding:20px;box-shadow:0 6px 0 var(--line);display:grid;gap:12px;animation:pop .3s}
+.tl-card h2{font-size:1.8rem}
+.tl-card .when{font-weight:800;color:var(--coral);font-family:var(--f-display);font-size:1.1rem}
+.todo{display:grid;gap:8px}
+.todo div{display:flex;gap:10px;align-items:flex-start;background:var(--mint-soft);border-radius:14px;padding:10px 12px;font-weight:700}
+.todo div::before{content:"✓";width:24px;height:24px;flex:none;border-radius:50%;background:var(--mint);color:#fff;display:grid;place-items:center;font-size:.8rem}
+
+/* sahne katmanları */
+.L{opacity:0;transition:opacity .6s,transform .9s cubic-bezier(.3,.9,.3,1);transform-box:fill-box;transform-origin:center}
+.L.on{opacity:1}
+.peel{transform:translate(120px,-260px) rotate(28deg)!important;opacity:0!important}
+.gone{transform:translate(160px,-40px) rotate(-30deg)!important;opacity:0!important}
+.up{transform:translateY(-10px)}
+.fall{animation:fall 1s linear infinite}
+.wipe-go{animation:wipe 1.1s ease-in-out infinite}
+.pat-go{animation:pat .6s ease-in-out infinite}
+.stream{animation:stream .5s linear infinite}
+.spin{animation:spin 4s linear infinite;transform-origin:center;transform-box:fill-box}
+.twinkle{animation:twinkle 1.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.float{animation:floaty 2s ease-in-out infinite}
+.bubbles circle{animation:bubbleUp 1.4s ease-in infinite}
+.timer-arc{animation:timer 2.6s linear forwards}
+@keyframes fall{from{transform:translateY(-20px);opacity:0}30%{opacity:1}to{transform:translateY(60px);opacity:0}}
+@keyframes wipe{0%{transform:translateY(0)}100%{transform:translateY(170px)}}
+@keyframes pat{0%,100%{transform:scale(1)}50%{transform:scale(.88)}}
+@keyframes stream{from{stroke-dashoffset:0}to{stroke-dashoffset:-24}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes twinkle{0%,100%{transform:scale(.6);opacity:.4}50%{transform:scale(1.15);opacity:1}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes bubbleUp{0%{transform:translateY(8px) scale(.6);opacity:0}30%{opacity:1}100%{transform:translateY(-30px) scale(1.1);opacity:0}}
+@keyframes timer{from{stroke-dashoffset:0}to{stroke-dashoffset:-176}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes pop{0%{transform:scale(.92);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes wiggle{0%,100%{transform:rotate(0)}20%{transform:rotate(-9deg)}40%{transform:rotate(8deg)}60%{transform:rotate(-6deg)}80%{transform:rotate(4deg)}}
+@keyframes hint{0%,100%{transform:scale(1);box-shadow:0 5px 0 rgba(120,80,30,.35)}50%{transform:scale(1.1);box-shadow:0 0 0 8px rgba(255,198,74,.85)}}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:900}
+
+@media (max-width:860px){
+  .hero,.tl{grid-template-columns:minmax(0,1fr)}
+  .play{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "stage" "nurse" "table"}
+  .strip{margin-left:0}
+  .stage-cap{display:block;position:absolute;left:14px;right:14px;bottom:14px;padding:6px 12px;border-radius:14px;background:rgba(255,255,255,.94);font-family:var(--f-display);font-weight:800;font-size:1.02rem;text-align:center;box-shadow:0 3px 0 var(--line);animation:pop .3s}
+  .stage-cap.oops{background:var(--coral-soft)}
+  .stage-cap.yay{background:var(--mint-soft)}
+  .stage{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;padding:8px;border-radius:24px}
+}
+@media (max-width:520px){
+  body{font-size:16px}
+  .items{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .item svg{width:56px;height:56px}
+  .item span{font-size:.8rem}
+  .dot{width:32px;height:32px}
+  .dot svg{width:20px;height:20px}
+  .face{width:58px;height:58px;top:16px;left:16px}
+  .face svg{width:52px;height:52px}
+  .tl-steps{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .logo b{font-size:1.15rem}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+</style>
+<div id="app"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+<script>
+/* ================= çizimler ================= */
+const NS = 'http://www.w3.org/2000/svg';
+const sv = (vb, inner, cls, label) => `<svg viewBox="${vb}" xmlns="${NS}" ${cls ? `class="${cls}"` : ''} role="img" aria-label="${label || ''}">${inner}</svg>`;
+const shadow = (cx = 50, cy = 88, rx = 32) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="6" fill="#3B2A14" opacity=".14"/>`;
+
+const LOGO = sv('0 0 48 48', `<rect x="2" y="2" width="44" height="44" rx="14" fill="#FF7563"/>
+  <g transform="rotate(-40 24 24)"><rect x="8" y="17" width="32" height="14" rx="7" fill="#FFE1C2"/><rect x="18" y="17" width="12" height="14" fill="#fff"/>
+  <circle cx="21" cy="21" r="1" fill="#E7B98E"/><circle cx="27" cy="21" r="1" fill="#E7B98E"/><circle cx="21" cy="27" r="1" fill="#E7B98E"/><circle cx="27" cy="27" r="1" fill="#E7B98E"/></g>`, '', 'Yara Bakım Masası');
+
+/* ---- yüzler ---- */
+function faceSVG(expr) {
+  const mouth = { worry: '<path d="M38 70 Q50 62 62 70" stroke="#8A3B2E" stroke-width="3.4" fill="none" stroke-linecap="round"/>',
+    ok: '<path d="M39 66 Q50 72 61 66" stroke="#8A3B2E" stroke-width="3.4" fill="none" stroke-linecap="round"/>',
+    happy: '<path d="M36 63 Q50 80 64 63 Z" fill="#B8433D"/><path d="M42 69 Q50 74 58 69" stroke="#FF9C9C" stroke-width="3" fill="none"/>' }[expr];
+  const brows = expr === 'worry' ? '<path d="M31 40 L42 36 M69 40 L58 36" stroke="#5B3A25" stroke-width="3" stroke-linecap="round"/>' : '<path d="M31 37 Q36 34 42 36 M58 36 Q64 34 69 37" stroke="#5B3A25" stroke-width="3" fill="none" stroke-linecap="round"/>';
+  const cheeks = expr === 'happy' ? '<circle cx="30" cy="60" r="6" fill="#FF9C9C" opacity=".6"/><circle cx="70" cy="60" r="6" fill="#FF9C9C" opacity=".6"/>' : '';
+  const sweat = expr === 'worry' ? '<path d="M78 34 q-5 8 0 11 q5 -3 0 -11z" fill="#8FD0F2"/>' : '';
+  return sv('0 0 100 100', `<circle cx="50" cy="54" r="36" fill="#F4CDB0"/>
+    <path d="M14 50 Q12 16 50 14 Q88 16 86 50 Q80 30 62 28 Q50 36 30 30 Q18 36 14 50Z" fill="#5B3A25"/>
+    <circle cx="14" cy="56" r="7" fill="#EBB894"/><circle cx="86" cy="56" r="7" fill="#EBB894"/>
+    ${brows}<ellipse cx="37" cy="48" rx="4" ry="5" fill="#22314A"/><ellipse cx="63" cy="48" rx="4" ry="5" fill="#22314A"/>
+    <circle cx="38.5" cy="46.5" r="1.4" fill="#fff"/><circle cx="64.5" cy="46.5" r="1.4" fill="#fff"/>${cheeks}${mouth}${sweat}`, '', 'Hastanın yüzü');
+}
+const NURSE = sv('0 0 100 100', `<path d="M18 100 Q20 76 50 74 Q80 76 82 100Z" fill="#22A88F"/><path d="M40 74 L50 88 L60 74" fill="#fff"/>
+  <circle cx="50" cy="48" r="28" fill="#E9B48E"/>
+  <path d="M22 48 Q20 18 50 18 Q80 18 78 48 Q76 34 64 30 L36 30 Q24 34 22 48Z" fill="#2E2A3A"/>
+  <path d="M28 26 Q50 8 72 26 L68 32 Q50 24 32 32Z" fill="#fff" stroke="#D3E5DD" stroke-width="1.5"/>
+  <path d="M47 20h6v-4h-6zM45 18h10" stroke="#FF7563" stroke-width="3"/>
+  <ellipse cx="40" cy="48" rx="3.4" ry="4.2" fill="#22314A"/><ellipse cx="60" cy="48" rx="3.4" ry="4.2" fill="#22314A"/>
+  <path d="M40 60 Q50 68 60 60" stroke="#8A3B2E" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <circle cx="32" cy="57" r="4.5" fill="#FF9C9C" opacity=".5"/><circle cx="68" cy="57" r="4.5" fill="#FF9C9C" opacity=".5"/>`, '', 'Hemşire Deniz');
+
+/* ---- malzeme simgeleri ---- */
+const GLOVE_PATH = 'M7.2 21.5v-5.2L4.3 12.4a1.5 1.5 0 0 1 2.3-1.9l1.8 2V4.6a1.3 1.3 0 0 1 2.6 0V10V3.3a1.3 1.3 0 0 1 2.6 0V10V4.2a1.3 1.3 0 0 1 2.6 0v6.3V6.4a1.3 1.3 0 0 1 2.6 0v8.8c0 3.6-2.3 6.3-5.6 6.3z';
+const ITEMS = {
+  soap: { label: 'Sabun ve su', svg: `${shadow()}<path d="M22 70 Q50 82 78 70 L80 78 Q50 92 20 78Z" fill="#9ED8F2"/><rect x="22" y="44" width="56" height="30" rx="13" fill="#FF8FAB"/><rect x="22" y="44" width="56" height="17" rx="10" fill="#FFB8CB"/>
+    <ellipse cx="38" cy="50" rx="8" ry="2.4" fill="#fff" opacity=".7"/>
+    <circle cx="36" cy="32" r="10" fill="#fff" stroke="#8ACFF0" stroke-width="2"/><circle cx="58" cy="24" r="7" fill="#fff" stroke="#8ACFF0" stroke-width="2"/><circle cx="70" cy="38" r="5" fill="#fff" stroke="#8ACFF0" stroke-width="2"/><circle cx="33" cy="29" r="2.4" fill="#DDF0FB"/>` },
+  gloves: { label: 'Eldiven', svg: `${shadow()}<g transform="translate(26 10) scale(3.2) rotate(8 12 12)"><path d="${GLOVE_PATH}" fill="#A9DDF5" stroke="#3FA2DB" stroke-width=".6"/></g>
+    <g transform="translate(8 14) scale(3.2) rotate(-8 12 12)"><path d="${GLOVE_PATH}" fill="#6EC3EE" stroke="#2A7FB2" stroke-width=".6"/></g>` },
+  bag: { label: 'Atık poşeti', svg: `${shadow()}<path d="M24 36 H76 L70 86 H30Z" fill="#FFD966" stroke="#D9A92A" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M24 36 Q34 22 42 34 Q50 20 58 34 Q66 22 76 36" fill="#FFE59A" stroke="#D9A92A" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M38 52 h24 M36 62 h28 M40 72 h20" stroke="#D9A92A" stroke-width="2.4" stroke-linecap="round" opacity=".6"/>` },
+  magnifier: { label: 'Yaraya bak', svg: `${shadow()}<path d="M60 60 L84 84" stroke="#9B6A3F" stroke-width="12" stroke-linecap="round"/><circle cx="42" cy="42" r="26" fill="#DDF0FB" stroke="#4A5A70" stroke-width="7"/>
+    <path d="M28 34 Q32 24 42 22" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>` },
+  saline: { label: 'Serum fizyolojik', svg: `${shadow()}<rect x="30" y="26" width="40" height="60" rx="12" fill="#E3F3FC" stroke="#7DB7DA" stroke-width="2.4"/><rect x="40" y="12" width="20" height="16" rx="4" fill="#3FA2DB"/>
+    <rect x="34" y="46" width="32" height="24" rx="5" fill="#fff"/><text x="50" y="63" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="15" fill="#2A7FB2">SF</text>
+    <path d="M36 32 v40" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".7"/>` },
+  gauze: { label: 'Gazlı bez', svg: `${shadow()}<rect x="24" y="30" width="54" height="50" rx="6" fill="#EAF1F4"/><rect x="20" y="24" width="54" height="50" rx="6" fill="#fff" stroke="#C8D7DD" stroke-width="2"/>
+    <path d="M20 41h54M20 57h54M38 24v50M56 24v50" stroke="#DCE6EA" stroke-width="2"/>` },
+  dressing: { label: 'Yeni pansuman', svg: `${shadow()}<rect x="16" y="26" width="68" height="52" rx="16" fill="#F6D9BC" stroke="#E2BE98" stroke-width="2"/><rect x="32" y="38" width="36" height="28" rx="6" fill="#fff"/>
+    ${[22, 28, 72, 78].map((x) => `<circle cx="${x}" cy="40" r="1.4" fill="#E2BE98"/><circle cx="${x}" cy="64" r="1.4" fill="#E2BE98"/>`).join('')}<path d="M36 42 h14" stroke="#EAF1F4" stroke-width="3" stroke-linecap="round"/>` },
+  cologne: { label: 'Kolonya', svg: `${shadow()}<rect x="40" y="10" width="20" height="14" rx="3" fill="#E1B23C"/><path d="M36 24 H64 L72 40 V82 Q72 88 66 88 H34 Q28 88 28 82 V40Z" fill="#FFF4B8" stroke="#E1C56A" stroke-width="2"/>
+    <circle cx="50" cy="60" r="13" fill="#FFE066" stroke="#F2B705" stroke-width="2"/><path d="M50 47 V73 M37 60 H63 M41 51 L59 69 M59 51 L41 69" stroke="#F2B705" stroke-width="1.4"/>` },
+  cotton: { label: 'Pamuk', svg: `${shadow()}<circle cx="36" cy="60" r="16" fill="#fff" stroke="#D5DEE3" stroke-width="2"/><circle cx="62" cy="58" r="18" fill="#fff" stroke="#D5DEE3" stroke-width="2"/><circle cx="50" cy="42" r="16" fill="#fff" stroke="#D5DEE3" stroke-width="2"/>
+    <path d="M44 38 q4 -4 9 -2 M30 56 q4 -4 9 -2" stroke="#E6ECEF" stroke-width="2" fill="none"/>` },
+  powder: { label: 'Pudra', svg: `${shadow()}<rect x="30" y="30" width="40" height="56" rx="12" fill="#FFC2D4" stroke="#F08AAB" stroke-width="2"/><rect x="34" y="18" width="32" height="14" rx="5" fill="#fff" stroke="#F08AAB" stroke-width="2"/>
+    ${[40, 50, 60].map((x) => `<circle cx="${x}" cy="25" r="1.8" fill="#F08AAB"/>`).join('')}<circle cx="24" cy="14" r="2.5" fill="#fff" stroke="#EBD"/><circle cx="76" cy="12" r="3" fill="#fff" stroke="#EBD"/>
+    <path d="M40 50 h20" stroke="#fff" stroke-width="4" stroke-linecap="round"/>` },
+  watch: { label: 'Saat ve takılar', svg: `${shadow()}<rect x="40" y="10" width="20" height="80" rx="8" fill="#9B6A3F"/><circle cx="50" cy="50" r="20" fill="#fff" stroke="#E1B23C" stroke-width="5"/>
+    <path d="M50 50 V38 M50 50 L58 54" stroke="#22314A" stroke-width="3" stroke-linecap="round"/><circle cx="78" cy="74" r="9" fill="none" stroke="#E1B23C" stroke-width="4"/><circle cx="78" cy="65" r="3" fill="#7FD3F7"/>` },
+  tap: { label: 'Serin akan su', svg: `${shadow()}<rect x="14" y="16" width="44" height="16" rx="8" fill="#AEBBC4"/><path d="M50 24 H64 Q78 24 78 38 V44 H66 V40 Q66 36 62 36 H50Z" fill="#C9D3DA" stroke="#94A3AD" stroke-width="2"/>
+    <rect x="26" y="8" width="18" height="8" rx="3" fill="#3FA2DB"/><path d="M72 50 Q66 62 72 70 Q78 62 72 50Z" fill="#7FC9EE"/><path d="M72 74 Q68 80 72 86 Q76 80 72 74Z" fill="#7FC9EE"/>` },
+  film: { label: 'Streç film', svg: `${shadow()}<rect x="16" y="36" width="68" height="26" rx="13" fill="#D2E9F6" stroke="#8CBAD6" stroke-width="2"/><ellipse cx="18" cy="49" rx="6" ry="13" fill="#B2D6EA"/>
+    <path d="M40 62 L34 88 L80 84 L84 56" fill="#E8F5FC" opacity=".8" stroke="#A9CFE4" stroke-width="2"/><path d="M44 70 l20 -2 M42 78 l26 -2" stroke="#fff" stroke-width="3" stroke-linecap="round"/>` },
+  hospital: { label: 'Sağlık kuruluşu', svg: `${shadow()}<rect x="20" y="30" width="60" height="56" rx="6" fill="#fff" stroke="#C8D7DD" stroke-width="2.4"/><rect x="38" y="62" width="24" height="24" rx="3" fill="#BFE3F6"/>
+    <rect x="30" y="38" width="12" height="10" rx="2" fill="#BFE3F6"/><rect x="58" y="38" width="12" height="10" rx="2" fill="#BFE3F6"/><circle cx="50" cy="22" r="14" fill="#FF7563"/><path d="M50 14 V30 M42 22 H58" stroke="#fff" stroke-width="5" stroke-linecap="round"/>` },
+  ice: { label: 'Buz', svg: `${shadow()}<rect x="18" y="44" width="32" height="32" rx="7" fill="#CFEFFF" stroke="#7FC9EE" stroke-width="2" transform="rotate(-8 34 60)"/><rect x="48" y="34" width="34" height="34" rx="7" fill="#E2F6FF" stroke="#7FC9EE" stroke-width="2" transform="rotate(10 65 51)"/>
+    <path d="M26 52 l8 -2 M56 42 l10 2" stroke="#fff" stroke-width="3" stroke-linecap="round"/>` },
+  toothpaste: { label: 'Diş macunu', svg: `${shadow()}<path d="M14 40 L70 32 L74 56 L18 64Z" fill="#fff" stroke="#9FB4C2" stroke-width="2"/><path d="M18 50 L72 44" stroke="#3FA2DB" stroke-width="6"/><rect x="72" y="36" width="14" height="20" rx="3" fill="#FF7563" transform="rotate(-8 79 46)"/>` },
+  yogurt: { label: 'Yoğurt', svg: `${shadow()}<path d="M24 36 H76 L70 86 H30Z" fill="#fff" stroke="#BFD0DA" stroke-width="2.4"/><ellipse cx="50" cy="36" rx="26" ry="7" fill="#F6F9FB" stroke="#BFD0DA" stroke-width="2.4"/><rect x="28" y="52" width="44" height="16" fill="#3FA2DB"/>` },
+  butter: { label: 'Tereyağı', svg: `${shadow()}<ellipse cx="50" cy="72" rx="38" ry="12" fill="#fff" stroke="#C8D7DD" stroke-width="2"/><path d="M26 66 V44 L44 34 H76 V56 L58 66Z" fill="#FFE07A" stroke="#E8B830" stroke-width="2"/><path d="M26 44 L58 44 L76 34 M58 44 V66" stroke="#E8B830" stroke-width="2" fill="none"/>` },
+  needle: { label: 'İğne', svg: `${shadow()}<path d="M20 82 L76 22" stroke="#A3AFB8" stroke-width="5" stroke-linecap="round"/><ellipse cx="72" cy="26" rx="3" ry="7" fill="none" stroke="#7A8790" stroke-width="2.4" transform="rotate(42 72 26)"/>
+    <path d="M74 24 Q90 40 72 54 Q60 64 72 78" stroke="#FF7563" stroke-width="3" fill="none"/>` },
+  clock: { label: 'Saat başı çevir', svg: `${shadow()}<circle cx="50" cy="52" r="32" fill="#fff" stroke="#FF7563" stroke-width="6"/><circle cx="28" cy="20" r="9" fill="#FF7563"/><circle cx="72" cy="20" r="9" fill="#FF7563"/>
+    <path d="M50 52 V32 M50 52 L64 60" stroke="#22314A" stroke-width="4" stroke-linecap="round"/><path d="M70 74 a26 26 0 0 0 6 -16" stroke="#22A88F" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M80 56 l-4 6 -6 -4" fill="#22A88F"/>` },
+  pillow: { label: 'Yastık', svg: `${shadow()}<path d="M14 38 Q50 22 86 38 Q92 56 86 74 Q50 90 14 74 Q8 56 14 38Z" fill="#BFE3F6" stroke="#7DB7DA" stroke-width="2.4"/><path d="M22 44 Q50 34 78 44 Q82 56 78 68 Q50 78 22 68 Q18 56 22 44Z" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="4 4"/>` },
+  roll: { label: 'Küçük yastık', svg: `${shadow()}<rect x="14" y="40" width="72" height="30" rx="15" fill="#FFD27A" stroke="#E0A93C" stroke-width="2.4"/><ellipse cx="22" cy="55" rx="6" ry="13" fill="#FFE2A6" stroke="#E0A93C" stroke-width="2"/><path d="M36 44 v22 M52 44 v22 M68 44 v22" stroke="#E0A93C" stroke-width="2" opacity=".5"/>` },
+  cream: { label: 'Nemlendirici', svg: `${shadow()}<rect x="22" y="42" width="56" height="42" rx="10" fill="#fff" stroke="#BFD0DA" stroke-width="2.4"/><rect x="20" y="30" width="60" height="16" rx="6" fill="#22A88F"/><rect x="30" y="56" width="40" height="16" rx="4" fill="#D4F2EA"/>
+    <path d="M40 64 h20" stroke="#22A88F" stroke-width="3" stroke-linecap="round"/>` },
+  food: { label: 'Su ve protein', svg: `${shadow()}<ellipse cx="38" cy="72" rx="28" ry="10" fill="#fff" stroke="#C8D7DD" stroke-width="2"/><ellipse cx="38" cy="68" rx="14" ry="8" fill="#fff" stroke="#E6ECEF"/><circle cx="38" cy="68" r="6" fill="#FFC64A"/>
+    <path d="M64 30 H86 L82 84 H68Z" fill="#DDF0FB" stroke="#7DB7DA" stroke-width="2.4"/><path d="M66 46 H84 L82 84 H68Z" fill="#8FD0F2" opacity=".8"/>` },
+  donut: { label: 'Simit yastık', svg: `${shadow()}<ellipse cx="50" cy="56" rx="38" ry="24" fill="#FFB38A" stroke="#E2885A" stroke-width="2.4"/><ellipse cx="50" cy="54" rx="14" ry="8" fill="#EAF6F1" stroke="#E2885A" stroke-width="2"/>` },
+};
+const itemSVG = (id) => sv('0 0 100 100', ITEMS[id].svg, '', ITEMS[id].label);
+
+/* ---- eller ---- */
+const HAND = (fill, extra = '') => `<g fill="${fill}"><rect x="22" y="44" width="56" height="52" rx="22"/><rect x="24" y="12" width="12" height="46" rx="6"/><rect x="38" y="2" width="12" height="52" rx="6"/>
+  <rect x="52" y="5" width="12" height="50" rx="6"/><rect x="66" y="16" width="11" height="42" rx="5.5"/><rect x="2" y="44" width="13" height="36" rx="6.5" transform="rotate(-34 9 62)"/><rect x="30" y="84" width="40" height="40" rx="8"/></g>${extra}`;
+const handsLayer = () => {
+  const germs = `<g class="L on" data-l="germs">${[[36, 50], [56, 30], [62, 66], [44, 22]].map(([x, y], i) => `<g class="twinkle" style="animation-delay:${i * .3}s"><circle cx="${x}" cy="${y}" r="6" fill="#8BCF5A"/><circle cx="${x - 2}" cy="${y - 1}" r="1.2" fill="#22314A"/><circle cx="${x + 2}" cy="${y - 1}" r="1.2" fill="#22314A"/></g>`).join('')}</g>`;
+  const bubbles = `<g class="L bubbles" data-l="bubbles">${[[30, 40], [50, 20], [66, 46], [40, 70], [58, 64], [26, 60]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${7 + (i % 3) * 2}" fill="#fff" stroke="#9FD8F5" stroke-width="2" style="animation-delay:${i * .2}s"/>`).join('')}</g>`;
+  const glove = `<g class="L" data-l="gloves">${HAND('#6EC3EE')}<rect x="28" y="96" width="44" height="10" rx="4" fill="#A9DDF5"/></g>`;
+  const one = `${HAND('#F1C29E')}<rect x="26" y="108" width="48" height="30" rx="6" fill="#22A88F"/>${glove}${germs}${bubbles}`;
+  return `<g transform="translate(26 238) rotate(14)">${one}</g><g transform="translate(600 0) scale(-1 1)"><g transform="translate(26 238) rotate(14)">${one.replace(/data-l="(\w+)"/g, 'data-l="$1"')}</g></g>`;
+};
+
+/* ---- sahne: karın / ameliyat yarası ---- */
+function bellyScene(opt = {}) {
+  const inc = 'M300 112 C296 160 304 220 300 282';
+  const stitches = Array.from({ length: 8 }, (_, i) => { const y = 124 + i * 21; return `<path d="M288 ${y - 4} L312 ${y + 4}" stroke="#2E4A6B" stroke-width="3" stroke-linecap="round"/>`; }).join('');
+  const dirt = [[290, 140], [312, 170], [288, 200], [310, 232], [294, 258], [306, 128], [284, 176], [316, 210]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${3 + (x % 3)}" fill="#9A4A33" opacity=".75"/>`).join('');
+  const sparkle = (x, y, d) => `<path class="twinkle" style="animation-delay:${d}s" d="M${x} ${y - 12} L${x + 3} ${y - 3} L${x + 12} ${y} L${x + 3} ${y + 3} L${x} ${y + 12} L${x - 3} ${y + 3} L${x - 12} ${y} L${x - 3} ${y - 3}Z" fill="#FFC64A"/>`;
+  return sv('0 0 600 380', `<defs>
+      <radialGradient id="bSkin" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="#F8D8BE"/><stop offset="1" stop-color="#E7B18C"/></radialGradient>
+      <linearGradient id="bBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DDF0FB"/><stop offset="1" stop-color="#F1F9FD"/></linearGradient></defs>
+    <rect width="600" height="380" fill="url(#bBg)"/>
+    <circle cx="80" cy="330" r="60" fill="#fff" opacity=".5"/><circle cx="540" cy="60" r="40" fill="#fff" opacity=".6"/>
+    <ellipse cx="300" cy="270" rx="250" ry="230" fill="url(#bSkin)"/>
+    <path d="M40 -10 H560 V58 Q300 108 40 58Z" fill="#8FD3C7"/><path d="M40 52 Q300 102 560 52" stroke="#6BBFB1" stroke-width="10" fill="none"/>
+    <path d="M60 30 H540" stroke="#A9DDD3" stroke-width="6" stroke-dasharray="2 18" stroke-linecap="round"/>
+    <ellipse cx="300" cy="322" rx="11" ry="7" fill="#C98A68"/><path d="M291 320 Q300 328 309 320" stroke="#A86B4E" stroke-width="2" fill="none"/>
+    <ellipse cx="300" cy="198" rx="22" ry="96" fill="#F2A08E" opacity=".35"/>
+    <path d="${inc}" stroke="#B8433D" stroke-width="6" fill="none" stroke-linecap="round"/><path d="${inc}" stroke="#E5786C" stroke-width="2" fill="none" stroke-linecap="round"/>
+    ${stitches}
+    <g class="L on" data-l="dirt">${dirt}</g>
+    <g class="L" data-l="clean">${sparkle(340, 150, 0)}${sparkle(262, 240, .5)}${sparkle(336, 270, .9)}</g>
+    <g class="L ${opt.done ? '' : 'on'}" data-l="old">
+      <rect x="252" y="98" width="96" height="200" rx="14" fill="#FFFFFF" stroke="#E2E6E8" stroke-width="2"/>
+      <ellipse cx="302" cy="196" rx="24" ry="40" fill="#E9C46A" opacity=".45"/><ellipse cx="298" cy="190" rx="10" ry="18" fill="#C9634F" opacity=".35"/>
+      <rect x="226" y="108" width="148" height="24" rx="4" fill="#F1E2C8" transform="rotate(-4 300 120)"/><rect x="226" y="264" width="148" height="24" rx="4" fill="#F1E2C8" transform="rotate(3 300 276)"/></g>
+    <g class="L" data-l="water"><g transform="translate(408 40) rotate(28)"><rect x="-20" y="-40" width="40" height="64" rx="12" fill="#E3F3FC" stroke="#7DB7DA" stroke-width="3"/><rect x="-8" y="24" width="16" height="12" rx="3" fill="#3FA2DB"/></g>
+      ${[0, 1, 2, 3, 4].map((i) => `<path class="fall" style="animation-delay:${i * .2}s" d="M${300 + (i % 2 ? 6 : -6)} ${110 + i * 30} q-6 10 0 14 q6 -4 0 -14z" fill="#7FC9EE"/>`).join('')}</g>
+    <g class="L" data-l="wipe"><g class="wipe-go"><rect x="276" y="100" width="48" height="44" rx="6" fill="#fff" stroke="#BFD0DA" stroke-width="2"/><path d="M276 115h48M276 129h48M292 100v44M308 100v44" stroke="#E2EAEE"/></g></g>
+    <g class="L" data-l="pat"><g class="pat-go" style="transform-origin:300px 196px"><rect x="268" y="166" width="64" height="60" rx="8" fill="#fff" stroke="#BFD0DA" stroke-width="2"/><path d="M268 186h64M268 206h64M289 166v60M311 166v60" stroke="#E2EAEE"/></g></g>
+    <g class="L ${opt.done ? 'on' : ''}" data-l="new">
+      <rect x="246" y="92" width="108" height="214" rx="22" fill="#F4D7BA" stroke="#E2BE98" stroke-width="2"/><rect x="264" y="110" width="72" height="178" rx="10" fill="#fff"/>
+      <path d="M272 120 v60" stroke="#EAF1F4" stroke-width="6" stroke-linecap="round"/>
+      ${[100, 300].map((y) => [258, 280, 300, 320, 342].map((x) => `<circle cx="${x}" cy="${y}" r="1.6" fill="#E2BE98"/>`).join('')).join('')}</g>
+    <g class="L" data-l="lens"><g class="float"><circle cx="300" cy="196" r="86" fill="#fff" fill-opacity=".14" stroke="#4A5A70" stroke-width="12"/><path d="M362 258 L420 318" stroke="#9B6A3F" stroke-width="20" stroke-linecap="round"/>
+      <path d="M248 160 Q258 132 290 124" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round"/></g></g>
+    ${opt.noHands ? '' : handsLayer()}`, 'scene', 'Karın bölgesinde ameliyat yarası');
+}
+
+/* ---- sahne: kol / yanık ---- */
+function armScene() {
+  return sv('0 0 600 380', `<defs><linearGradient id="aSkin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F7D5BA"/><stop offset="1" stop-color="#E2A983"/></linearGradient>
+      <radialGradient id="aBurn" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#EF4B3E"/><stop offset=".7" stop-color="#F57A68" stop-opacity=".9"/><stop offset="1" stop-color="#F7A08F" stop-opacity="0"/></radialGradient>
+      <radialGradient id="aCool" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#F7A598"/><stop offset="1" stop-color="#F7B9A8" stop-opacity="0"/></radialGradient>
+      <linearGradient id="aBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF4DE"/><stop offset="1" stop-color="#FFE9C2"/></linearGradient></defs>
+    <rect width="600" height="380" fill="url(#aBg)"/>
+    <rect x="0" y="300" width="600" height="80" fill="#F2D3A0"/><path d="M0 300 H600" stroke="#E2BB7E" stroke-width="4"/>
+    <path d="M-20 180 Q200 166 420 178 L440 180 L440 262 L420 266 Q200 278 -20 270Z" fill="url(#aSkin)"/>
+    <path d="M430 178 Q470 168 520 176 Q560 180 572 196 Q580 212 566 222 L568 236 Q574 250 560 258 Q520 270 470 264 L432 262Z" fill="url(#aSkin)"/>
+    <path d="M512 196 q30 -2 50 6 M516 220 q30 0 50 4 M512 242 q28 2 46 4" stroke="#C88E6A" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <path d="M-20 172 H110 V278 H-20Z" fill="#7FC6EE"/><path d="M110 172 V278" stroke="#5DA9D6" stroke-width="8"/>
+    <ellipse cx="270" cy="220" rx="88" ry="40" fill="url(#aBurn)"/>
+    <ellipse cx="248" cy="208" rx="22" ry="6" fill="#fff" opacity=".45"/>
+    <g class="L" data-l="cool"><ellipse cx="270" cy="220" rx="96" ry="44" fill="#F8E0D2"/><ellipse cx="270" cy="220" rx="78" ry="34" fill="url(#aCool)"/></g>
+    <g class="L on" data-l="watch"><rect x="404" y="170" width="30" height="104" rx="10" fill="#9B6A3F"/><circle cx="419" cy="222" r="24" fill="#fff" stroke="#E1B23C" stroke-width="6"/>
+      <path d="M419 222 V208 M419 222 L428 228" stroke="#22314A" stroke-width="3.4" stroke-linecap="round"/></g>
+    <g class="L" data-l="faucet"><rect x="180" y="-10" width="40" height="44" fill="#AEBBC4"/><path d="M200 26 H262 Q290 26 290 54 V66 H262 V58 Q262 52 256 52 H200Z" fill="#C9D3DA" stroke="#94A3AD" stroke-width="3"/>
+      <rect x="160" y="6" width="80" height="14" rx="7" fill="#3FA2DB"/></g>
+    <g class="L" data-l="stream"><rect x="262" y="66" width="28" height="140" rx="12" fill="#9FD8F5" opacity=".75"/>
+      <path class="stream" d="M270 66 V206 M282 66 V206" stroke="#fff" stroke-width="3" stroke-dasharray="10 14" opacity=".9"/>
+      ${[[236, 200], [312, 196], [226, 236], [320, 238]].map(([x, y], i) => `<path class="fall" style="animation-delay:${i * .25}s" d="M${x} ${y} q-5 8 0 11 q5 -3 0 -11z" fill="#7FC9EE"/>`).join('')}</g>
+    <g class="L" data-l="timer"><circle cx="500" cy="80" r="40" fill="#fff" stroke="#E8EEF1" stroke-width="8"/>
+      <circle class="timer-arc" cx="500" cy="80" r="28" fill="none" stroke="#3FA2DB" stroke-width="8" stroke-dasharray="176" transform="rotate(-90 500 80)"/>
+      <text x="500" y="86" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="18" fill="#22314A">20 dk</text></g>
+    <g class="L" data-l="film"><rect x="160" y="170" width="226" height="104" rx="18" fill="#E2F3FC" fill-opacity=".55" stroke="#9CCBE6" stroke-width="3"/>
+      <path d="M182 190 L230 254 M228 184 L282 258 M290 186 L340 254" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".75"/></g>
+    <g class="L" data-l="sign"><g class="float"><rect x="40" y="40" width="150" height="86" rx="18" fill="#fff" stroke="#FFB3A6" stroke-width="4"/>
+      <circle cx="80" cy="83" r="22" fill="#FF7563"/><path d="M80 71 V95 M68 83 H92" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+      <text x="140" y="78" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="17" fill="#22314A">Gerekirse</text>
+      <text x="140" y="98" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="17" fill="#22314A">başvur</text></g></g>`, 'scene', 'Ön kolda küçük yanık');
+}
+
+/* ---- sahne: yatak / bası yarasından korunma ---- */
+function bedScene() {
+  const body = (lat) => lat
+    ? `<path d="M150 214 Q170 170 230 168 Q300 160 340 186 Q380 170 440 190 Q490 196 520 214 L520 240 L150 240Z" fill="#FFB38A"/>
+       <path d="M150 214 Q170 170 230 168 Q300 160 340 186 Q380 170 440 190 Q490 196 520 214" stroke="#E2885A" stroke-width="3" fill="none"/>
+       <circle cx="118" cy="196" r="30" fill="#F4CDB0"/><path d="M92 186 Q100 160 128 166 Q146 172 146 188 Q132 176 112 180Z" fill="#5B3A25"/>
+       <ellipse cx="108" cy="200" rx="3.4" ry="4" fill="#22314A"/><path d="M98 212 Q104 216 110 212" stroke="#8A3B2E" stroke-width="2.6" fill="none" stroke-linecap="round"/>`
+    : `<path d="M150 222 Q170 196 240 194 Q330 188 400 200 Q470 206 520 218 L520 240 L150 240Z" fill="#FFB38A"/>
+       <path d="M150 222 Q170 196 240 194 Q330 188 400 200 Q470 206 520 218" stroke="#E2885A" stroke-width="3" fill="none"/>
+       <circle cx="116" cy="204" r="30" fill="#F4CDB0"/><path d="M88 200 Q90 172 118 172 Q146 174 146 200 Q132 186 116 188 Q100 186 88 200Z" fill="#5B3A25"/>
+       <ellipse cx="108" cy="204" rx="3.4" ry="4" fill="#22314A"/><ellipse cx="126" cy="204" rx="3.4" ry="4" fill="#22314A"/><path d="M108 216 Q117 222 126 216" stroke="#8A3B2E" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+  const pt = (x, y, t, d) => `<g class="twinkle" style="animation-delay:${d}s"><circle cx="${x}" cy="${y}" r="11" fill="#FF7563" opacity=".85"/><circle cx="${x}" cy="${y}" r="5" fill="#fff"/></g><text x="${x}" y="${y + 30}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="800" font-size="13" fill="#B8433D">${t}</text>`;
+  return sv('0 0 600 380', `<defs><linearGradient id="dBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EAF0FF"/><stop offset="1" stop-color="#F7F9FF"/></linearGradient></defs>
+    <rect width="600" height="380" fill="url(#dBg)"/><rect x="0" y="310" width="600" height="70" fill="#E2E7F5"/>
+    <rect x="380" y="40" width="120" height="90" rx="10" fill="#fff" stroke="#C9D3EA" stroke-width="4"/><path d="M440 40 V130 M380 85 H500" stroke="#C9D3EA" stroke-width="4"/><circle cx="410" cy="64" r="10" fill="#FFE59A"/>
+    <rect x="30" y="140" width="26" height="170" rx="8" fill="#B98A5E"/><rect x="530" y="200" width="20" height="110" rx="6" fill="#B98A5E"/>
+    <rect x="44" y="270" width="500" height="22" rx="8" fill="#C99A6B"/><rect x="54" y="236" width="480" height="36" rx="12" fill="#fff" stroke="#DCE3F0" stroke-width="2"/>
+    <ellipse cx="110" cy="232" rx="50" ry="14" fill="#DDF0FB" stroke="#B7D6EA" stroke-width="2"/>
+    <g class="L" data-l="pillows"><path d="M214 176 Q250 150 300 160 Q318 170 306 186 Q260 196 214 190 Z" fill="#BFE3F6" stroke="#7DB7DA" stroke-width="2.4"/>
+      </g>
+    <g class="L on" data-l="supine">${body(false)}</g>
+    <g class="L" data-l="lateral">${body(true)}</g>
+    <g class="L" data-l="pillows"><ellipse cx="420" cy="210" rx="32" ry="14" fill="#BFE3F6" stroke="#7DB7DA" stroke-width="2.4"/></g>
+    <g class="L" data-l="heel"><rect x="440" y="220" width="64" height="22" rx="11" fill="#FFD27A" stroke="#E0A93C" stroke-width="2.4"/></g>
+    <g class="L on" data-l="feet"><path d="M516 206 Q540 200 548 214 Q552 228 538 236 L516 236Z" fill="#F4CDB0"/></g>
+    <g class="L" data-l="points">${pt(290, 236, 'kuyruk sokumu', 0)}${pt(536, 236, 'topuk', .3)}${pt(140, 236, 'kulak arkası', .6)}${pt(214, 236, 'sırt', .9)}</g>
+    <g class="L" data-l="shine">${[[260, 186], [380, 186], [470, 204]].map(([x, y], i) => `<path class="twinkle" style="animation-delay:${i * .3}s" d="M${x} ${y - 12} L${x + 3} ${y - 3} L${x + 12} ${y} L${x + 3} ${y + 3} L${x} ${y + 12} L${x - 3} ${y + 3} L${x - 12} ${y} L${x - 3} ${y - 3}Z" fill="#FFC64A"/>`).join('')}</g>
+    <g class="L" data-l="clock"><circle cx="230" cy="80" r="40" fill="#fff" stroke="#FF7563" stroke-width="7"/><g class="spin"><path d="M230 80 V52" stroke="#22314A" stroke-width="5" stroke-linecap="round"/></g>
+      <path d="M230 80 L246 88" stroke="#22314A" stroke-width="5" stroke-linecap="round"/><text x="230" y="146" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="18" fill="#22314A">2 saatte bir</text></g>
+    <g class="L" data-l="tray"><rect x="548" y="180" width="52" height="10" rx="4" fill="#B98A5E"/><path d="M556 146 H578 L575 180 H559Z" fill="#DDF0FB" stroke="#7DB7DA" stroke-width="2"/><path d="M557 158 H577 L575 180 H559Z" fill="#8FD0F2"/>
+      <ellipse cx="590" cy="176" rx="12" ry="4" fill="#fff" stroke="#C8D7DD"/><circle cx="590" cy="173" r="4" fill="#FFC64A"/></g>`, 'scene', 'Yatakta yatan hasta');
+}
+
+/* ---- iyileşme takvimi çizimi ---- */
+const HEAL_STAGES = [
+  { red: .55, line: '#B8433D', w: 6, st: true, halo: 26 },
+  { red: .35, line: '#C9564B', w: 5.5, st: true, halo: 20 },
+  { red: .18, line: '#D9706A', w: 5, st: false, halo: 14 },
+  { red: .1, line: '#E08A80', w: 6, st: false, halo: 10 },
+  { red: .06, line: '#E7A19A', w: 7, st: false, halo: 8 },
+  { red: 0, line: '#EFC9B6', w: 4, st: false, halo: 0 },
+];
+function healScene(i) {
+  const s = HEAL_STAGES[i], inc = 'M300 92 C296 140 304 200 300 262';
+  const stitches = s.st ? Array.from({ length: 8 }, (_, k) => { const y = 104 + k * 21; return `<path d="M288 ${y - 4} L312 ${y + 4}" stroke="#2E4A6B" stroke-width="3" stroke-linecap="round"/>`; }).join('') : '';
+  return sv('0 0 600 340', `<defs><radialGradient id="hSkin" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="#F8D8BE"/><stop offset="1" stop-color="#E7B18C"/></radialGradient></defs>
+    <rect width="600" height="340" fill="#DDF0FB"/><ellipse cx="300" cy="250" rx="260" ry="230" fill="url(#hSkin)"/>
+    <ellipse cx="300" cy="300" rx="11" ry="7" fill="#C98A68"/>
+    ${s.halo ? `<ellipse cx="300" cy="178" rx="${s.halo}" ry="98" fill="#F2786A" opacity="${s.red}"/>` : ''}
+    <path d="${inc}" stroke="${s.line}" stroke-width="${s.w}" fill="none" stroke-linecap="round"/>${stitches}`, 'scene', 'Ameliyat izinin görünümü');
+}
+
+/* ---- uyarı simgeleri ---- */
+const WARN_ICONS = {
+  fever: sv('0 0 48 48', '<rect x="20" y="6" width="8" height="26" rx="4" fill="#fff" stroke="#FF7563" stroke-width="2.4"/><circle cx="24" cy="36" r="8" fill="#FF7563"/><rect x="22" y="14" width="4" height="20" fill="#FF7563"/><path d="M34 12h6M34 18h4M34 24h6" stroke="#FF7563" stroke-width="2.4" stroke-linecap="round"/>'),
+  red: sv('0 0 48 48', '<circle cx="24" cy="24" r="18" fill="#FFB3A6"/><circle cx="24" cy="24" r="10" fill="#FF7563"/><path d="M24 4v6M24 38v6M4 24h6M38 24h6" stroke="#FF7563" stroke-width="3" stroke-linecap="round"/>'),
+  pus: sv('0 0 48 48', '<path d="M24 6 C14 20 10 26 10 32 a14 14 0 0 0 28 0 C38 26 34 20 24 6Z" fill="#D9C24A"/><path d="M18 30 a6 6 0 0 0 6 6" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>'),
+  open: sv('0 0 48 48', '<path d="M24 6 C18 18 30 30 24 42" stroke="#B8433D" stroke-width="3" fill="none"/><path d="M16 14 L22 18 M32 30 L26 34" stroke="#2E4A6B" stroke-width="3" stroke-linecap="round"/><path d="M28 12 q6 8 0 16" stroke="#FF7563" stroke-width="4" fill="none"/>'),
+  pain: sv('0 0 48 48', '<circle cx="24" cy="24" r="18" fill="#FFE59A"/><path d="M16 20 L20 18 M32 20 L28 18" stroke="#22314A" stroke-width="2.6" stroke-linecap="round"/><path d="M16 33 Q24 26 32 33" stroke="#22314A" stroke-width="2.6" fill="none" stroke-linecap="round"/>'),
+  blister: sv('0 0 48 48', '<path d="M6 36 Q24 4 42 36Z" fill="#FFF0D2" stroke="#E2AE86" stroke-width="2.4"/><ellipse cx="18" cy="24" rx="4" ry="2" fill="#fff"/><path d="M4 36h40" stroke="#E2AE86" stroke-width="2.4"/>'),
+  size: sv('0 0 48 48', '<path d="M14 40 V20 a4 4 0 0 1 8 0 V16 a4 4 0 0 1 8 0 V18 a4 4 0 0 1 8 0 V30 Q38 42 26 42Z" fill="#F4CDB0" stroke="#C88E6A" stroke-width="2"/><circle cx="26" cy="30" r="6" fill="#FF7563" opacity=".7"/>'),
+  skin: sv('0 0 48 48', '<rect x="6" y="14" width="36" height="22" rx="8" fill="#F4CDB0"/><ellipse cx="24" cy="25" rx="10" ry="6" fill="#8E3A62" opacity=".75"/>'),
+};
+/* ================= senaryolar (hasta dili) ================= */
+const SCENARIOS = [
+  {
+    id: 'kesi', title: 'Ameliyat yarası pansumanı', tag: '8 adım', scene: bellyScene, thumb: () => bellyScene({ done: true, noHands: true }),
+    short: 'Evde pansumanı temiz ve güvenli şekilde adım adım yapın.',
+    intro: 'Merhaba! Bugün ameliyat yaranızın pansumanını birlikte yapacağız. Masadan sıradaki malzemeyi seçin.',
+    distractors: [
+      { item: 'cologne', why: 'Kolonya ve alkol yarayı yakar, yeni oluşan dokuyu tahriş eder. Yaraya sürmeyin.' },
+      { item: 'cotton', why: 'Pamuğun tüyleri yaraya yapışır ve mikrop taşır. Onun yerine gazlı bez kullanın.' },
+      { item: 'powder', why: 'Pudra yarada topaklanır ve mikropların üremesini kolaylaştırır. Yaraya hiçbir toz sürmeyin.' },
+    ],
+    steps: [
+      { item: 'soap', title: 'Ellerinizi yıkayın', say: 'Ellerinizi sabun ve suyla en az 20 saniye yıkayın.', why: 'Mikroplar en çok ellerimizde saklanır. Yaraya ulaşmalarını önce böyle engelleriz.', hint: 'Ellerimizde ne var? Önce onları temizleyelim.', face: 'ok',
+        fx: (A) => { A.pulse('bubbles', 2200); setTimeout(() => A.off('germs'), 900); } },
+      { item: 'gloves', title: 'Eldiven giyin', say: 'Temiz, tek kullanımlık eldiven giyin.', why: 'Eldiven, ellerinizle yara arasında ek bir koruma sağlar.', hint: 'Temiz ellerimizi bir şeyle korusak?',
+        fx: (A) => A.on('gloves') },
+      { item: 'bag', title: 'Eski pansumanı çıkarın', say: 'Bantları yaraya doğru, yavaşça çekerek eski pansumanı çıkarın ve hemen poşete atın.', why: 'Kirli pansuman masaya ya da yatağa konmaz; poşet mikropları içeride tutar.', hint: 'Yaranın üstünde hâlâ eski bir örtü var.',
+        fx: (A) => A.add('old', 'peel') },
+      { item: 'magnifier', title: 'Yaraya bakın', say: 'Yaraya dikkatle bakın. Kızarıklık yayılıyor mu? Sarı-yeşil akıntı ya da kötü koku var mı? Yara kenarları açılmış mı?', why: 'Değişiklikleri erken fark etmek, sorunları büyümeden çözmeyi sağlar. Yaramız bugün iyi görünüyor!', hint: 'Temizlemeden önce yaranın nasıl olduğunu görelim.', face: 'ok',
+        fx: (A) => A.pulse('lens', 2800) },
+      { item: 'saline', title: 'Serumla temizleyin', say: 'Gazlı bezi serum fizyolojikle ıslatın. Yarayı üstten alta doğru tek seferde silin. Her silişte yeni bez kullanın.', why: 'Tek yönde silmek kiri temiz bölgeye geri taşımaz. Serum fizyolojik yarayı yakmaz.', hint: 'Yarayı neyle temizleriz? Yakmayan bir sıvıyla.',
+        fx: (A) => { A.pulse('water', 2400); A.pulse('wipe', 2400); setTimeout(() => A.off('dirt'), 1600); setTimeout(() => A.pulse('clean', 2000), 1800); } },
+      { item: 'gauze', title: 'Hafifçe kurulayın', say: 'Kuru gazlı bezle yarayı ovmadan, hafifçe bastırarak kurulayın.', why: 'Nemli kalan yara çevresinde cilt yumuşar ve mikrop kolay ürer.', hint: 'Yara şimdi ıslak. Ne yapmalıyız?',
+        fx: (A) => A.pulse('pat', 1800) },
+      { item: 'dressing', title: 'Yeni pansumanı yapıştırın', say: 'Yeni pansumanın beyaz kısmına dokunmadan, yaranın tam üstüne yapıştırın.', why: 'Yarayla temas eden beyaz kısım temiz kalmalıdır. Pansuman yarayı mikroplardan korur.', hint: 'Temiz yarayı neyle örteriz?',
+        fx: (A) => A.on('new') },
+      { item: 'soap', title: 'Eldiveni çıkarıp elinizi yıkayın', say: 'Eldivenleri çıkarıp poşete atın, poşeti ağzını bağlayarak çöpe atın. Ellerinizi yeniden yıkayın.', why: 'Eldivenin dış yüzü kirlenmiştir. İşlem bitince eller mutlaka yeniden yıkanır.', hint: 'Bittiğinde ellerimiz için ne yapıyorduk?', face: 'happy',
+        fx: (A) => { A.off('gloves'); A.pulse('bubbles', 2000); } },
+    ],
+    warn: [['fever', 'Ateş 38 °C ve üzeri'], ['red', 'Yara çevresinde yayılan kızarıklık ve şişlik'], ['pus', 'Sarı-yeşil akıntı ya da kötü koku'], ['open', 'Yara kenarlarında açılma'], ['pain', 'Giderek artan ağrı']],
+  },
+  {
+    id: 'yanik', title: 'Küçük yanıkta ilk yardım', tag: '4 adım', scene: armScene, thumb: armScene,
+    short: 'Evde küçük bir yanık olduğunda ilk dakikalarda neler yapılır?',
+    intro: 'Ocakta elinizi yaktınız diyelim. Masada işe yarayan şeyler de var, zarar verenler de. Doğru olanları sırayla seçin.',
+    distractors: [
+      { item: 'ice', why: 'Buz damarları büzer ve yanığı derinleştirebilir. Serin akan su kullanın.' },
+      { item: 'toothpaste', why: 'Diş macunu yanığı soğutmaz; mikrop bulaşmasına ve yaranın görülememesine yol açar.' },
+      { item: 'yogurt', why: 'Yoğurt yanığa iyi gelmez, mikrop taşır. Yanığa yiyecek sürülmez.' },
+      { item: 'butter', why: 'Tereyağı ve yağlar ısıyı içeride tutar, yanığı ağırlaştırır.' },
+      { item: 'needle', why: 'Su toplamış kabarcıkları patlatmayın. Kabarcık, altındaki deriyi doğal bir örtü gibi korur.' },
+      { item: 'cotton', why: 'Pamuk tüyleri yanığa yapışır, sonra çıkarması acı verir.' },
+    ],
+    steps: [
+      { item: 'watch', title: 'Takıları çıkarın', say: 'Saat, yüzük ve bileklik gibi takıları hemen çıkarın.', why: 'Yanık bölgesi birkaç dakika içinde şişer; sonra takılar çıkmaz ve kan dolaşımını sıkar.', hint: 'Kolda, şişince sıkacak bir şey var.', face: 'worry',
+        fx: (A) => A.add('watch', 'gone') },
+      { item: 'tap', title: '20 dakika serin su', say: 'Yanığı 20 dakika boyunca serin (buz gibi değil) akan suyun altında tutun.', why: 'Serin su yanığın derinleşmesini durdurur ve ağrıyı azaltır. İlk 3 saat içinde yapılırsa bile işe yarar.', hint: 'Yanığı nasıl soğuturuz? Buzla değil.', face: 'ok',
+        fx: (A) => { A.on('faucet'); A.on('stream'); A.on('timer'); setTimeout(() => { A.off('stream'); A.on('cool'); }, 2600); setTimeout(() => { A.off('faucet'); A.off('timer'); }, 3400); } },
+      { item: 'film', title: 'Gevşekçe örtün', say: 'Yanığı streç filmle sarmadan, üstüne gevşekçe serin. Streç film yoksa temiz, kuru bir örtü kullanın.', why: 'Örtü yanığı mikroplardan ve havadan korur, ağrıyı azaltır. Streç film yaraya yapışmaz.', hint: 'Soğuyan yanığı mikroplardan nasıl koruruz?',
+        fx: (A) => A.on('film') },
+      { item: 'hospital', title: 'Gerekirse başvurun', say: 'Yanık avuç içinizden büyükse; yüzde, elde, ayakta, eklemde ya da genital bölgedeyse, su toplamışsa veya çocuk ya da yaşlıdaysa sağlık kuruluşuna başvurun.', why: 'Bu yanıklar küçük görünse bile uzman bakımı ve izlem gerektirir.', hint: 'Son olarak, kimden yardım alırız?', face: 'happy',
+        fx: (A) => A.on('sign') },
+    ],
+    warn: [['size', 'Yanık avuç içinden büyük'], ['blister', 'Su toplamış, kabarcıklı yanık'], ['red', 'Yüz, el, ayak, eklem ya da genital bölgede yanık'], ['pus', 'Sonraki günlerde akıntı, kötü koku'], ['fever', 'Ateş']],
+  },
+  {
+    id: 'basi', title: 'Bası yarasından korunma', tag: '6 adım', scene: bedScene, thumb: bedScene,
+    short: 'Yatakta uzun süre kalan yakınınızın cildini korumanın yolları.',
+    intro: 'Yakınınız gün boyu yatakta. Uzun süre aynı yere baskı olursa cilt yara açabilir. Koruma adımlarını sırayla uygulayalım.',
+    distractors: [
+      { item: 'donut', why: 'Simit (halka) yastık ortadaki bölgenin çevresini sıkıştırır, kanlanmayı bozar. Kullanmayın.' },
+      { item: 'cologne', why: 'Kolonya ve alkollü ürünler cildi kurutup çatlatır. Kızarık yere ovarak masaj da yapılmaz.' },
+      { item: 'powder', why: 'Pudra terle topaklanır ve cildi tahriş eder.' },
+    ],
+    steps: [
+      { item: 'clock', title: 'Pozisyonu değiştirin', say: 'En az 2 saatte bir yatış pozisyonunu değiştirin: sırtüstü, sağ yan, sol yan.', why: 'Aynı yere uzun süre baskı olursa o bölgeye kan gidemez ve cilt yara açar.', hint: 'Baskıyı azaltmak için zamanı takip edelim.', face: 'ok',
+        fx: (A) => { A.on('clock'); A.off('supine'); A.on('lateral'); } },
+      { item: 'pillow', title: 'Yastıkla destekleyin', say: 'Yan yatarken sırtına ve dizlerinin arasına yastık koyun.', why: 'Yastık kemiklerin birbirine ve yatağa baskı yapmasını önler.', hint: 'Yan yatan kişiyi neyle destekleriz?',
+        fx: (A) => A.on('pillows') },
+      { item: 'roll', title: 'Topukları kaldırın', say: 'Baldırın altına küçük bir yastık koyun; topuklar yataktan kalksın.', why: 'Topuklarda deri çok incedir ve en kolay yara açan yerlerden biridir.', hint: 'Ayakların ucuna bakın: topuklar yatağa basıyor.',
+        fx: (A) => { A.on('heel'); A.add('feet', 'up'); } },
+      { item: 'magnifier', title: 'Her gün cildi kontrol edin', say: 'Her gün kuyruk sokumu, kalça, topuk, sırt ve kulak arkasına bakın.', why: 'Parmakla bastırınca solmayan kızarıklık bası yarasının ilk işaretidir. Görürseniz hemşirenize söyleyin.', hint: 'Riskli bölgeleri görmek için ne kullanırız?',
+        fx: (A) => A.on('points') },
+      { item: 'cream', title: 'Cildi nemli ve temiz tutun', say: 'Cildi temiz ve kuru tutun, nemlendirici sürün. Kızarık yere masaj yapmayın.', why: 'Kuru ve çatlak cilt ya da idrar-ter ile ıslak kalan cilt daha kolay yara açar.', hint: 'Cildin kendisini neyle besleriz?',
+        fx: (A) => A.pulse('shine', 2400) },
+      { item: 'food', title: 'Su ve protein', say: 'Bol su içirin; yumurta, süt, et, baklagil gibi proteinli yiyecekler verin.', why: 'Cilt, kendini onarmak için suya ve proteine ihtiyaç duyar.', hint: 'Cildi içeriden de besleyelim.', face: 'happy',
+        fx: (A) => A.on('tray') },
+    ],
+    warn: [['red', 'Bastırınca solmayan kızarıklık'], ['skin', 'Mor-bordo renk değişimi'], ['blister', 'Su toplamış kabarcık ya da açık yara'], ['pain', 'Bölgede ağrı, sıcaklık, sertlik'], ['fever', 'Ateş']],
+  },
+];
+
+const HEAL_INFO = [
+  { when: 'Gün 1–3', t: 'Yara kapanıyor', d: 'Yara kenarları birbirine yapışıyor. Hafif kızarıklık, şişlik ve ağrı bu günlerde normaldir.', todo: ['Pansumanı kuru ve temiz tutun.', 'Öksürürken yaranın üstüne bir yastık bastırın.'] },
+  { when: 'Gün 4–7', t: 'Yeni doku oluşuyor', d: 'Yaranın altında yeni doku ve damarlar oluşuyor. Kızarıklık azalmaya başlar.', todo: ['Doktorunuz izin verdiyse kısa duş alabilirsiniz.', 'Proteinli beslenin, bol su için.'] },
+  { when: '2. hafta', t: 'Dikişler alınıyor', d: 'Dikiş ya da zımbalar çoğunlukla bu dönemde alınır; zamanı doktorunuz söyler. Hafif kaşıntı olabilir.', todo: ['Kaşımayın, kabukları koparmayın.', 'Ağır kaldırmayın.'] },
+  { when: '3. hafta', t: 'Yara kapandı', d: 'Yara dışarıdan kapandı ama içi hâlâ güçleniyor.', todo: ['Ağır kaldırmaktan ve zorlamaktan kaçının.', 'Kontrollerinize gidin.'] },
+  { when: '3. ay', t: 'İz olgunlaşıyor', d: 'İz pembe ve biraz kabarık görünebilir. Bu normaldir, zamanla solar.', todo: ['İzi güneşten koruyun.', 'Doktorunuz önerdiyse nemlendirici ile hafif masaj yapın.'] },
+  { when: '1 yıl', t: 'İz soluyor', d: 'İz açık renkli, ince bir çizgiye dönüşür.', todo: ['İz kaşınıyor, sertleşiyor ya da büyüyorsa doktorunuza danışın.'] },
+];
+/* ================= yardımcılar ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'html') el.innerHTML = v;
+    else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2).toLowerCase(), v);
+    else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const kid of kids.flat(Infinity)) { if (kid == null || kid === false) continue; el.append(kid.nodeType ? kid : document.createTextNode(String(kid))); }
+  return el;
+}
+const shuffle = (a) => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const reduceMotion = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } })();
+const STAR = (on) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="${on ? '#FFC64A' : '#D3E5DD'}" stroke="${on ? '#E8A417' : '#C3D8CF'}" stroke-width="1" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg>`;
+const starsHTML = (n) => [0, 1, 2].map((i) => STAR(i < n)).join('');
+const ICO = {
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  on: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+  off: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>',
+};
+
+/* ================= kayıt ve ses ================= */
+const KEY = 'yara-bakim-masasi-v1';
+const Store = {
+  d: { stars: {}, sound: true },
+  load() { try { const v = JSON.parse(localStorage.getItem(KEY) || 'null'); if (v) this.d = { ...this.d, ...v, stars: v.stars || {} }; } catch (e) { } },
+  save() { try { localStorage.setItem(KEY, JSON.stringify(this.d)); } catch (e) { } },
+};
+const Sound = {
+  ctx: null,
+  tone(f, dur = 0.14, type = 'sine', when = 0, vol = 0.08) {
+    if (!Store.d.sound) return;
+    try {
+      if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const c = this.ctx, t = c.currentTime + when, o = c.createOscillator(), g = c.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(c.destination); o.start(t); o.stop(t + dur + 0.03);
+    } catch (e) { }
+  },
+  ok() { this.tone(784, 0.12, 'triangle'); this.tone(1175, 0.2, 'triangle', 0.09); },
+  soft() { this.tone(330, 0.16, 'sine', 0, 0.07); this.tone(262, 0.22, 'sine', 0.1, 0.06); },
+  tap() { this.tone(600, 0.05, 'sine', 0, 0.04); },
+  win() { [523, 659, 784, 1046, 1318].forEach((f, i) => this.tone(f, 0.22, 'triangle', i * 0.1, 0.08)); },
+};
+const FX = {
+  cv: null, c: null, p: [], raf: 0,
+  init() { this.cv = $('#fx'); this.c = this.cv.getContext('2d'); const rs = () => { const d = window.devicePixelRatio || 1; this.cv.width = innerWidth * d; this.cv.height = innerHeight * d; this.c.setTransform(d, 0, 0, d, 0, 0); }; rs(); addEventListener('resize', rs); },
+  burst(x, y, n = 26) {
+    if (reduceMotion) return;
+    const cols = ['#FF7563', '#FFC64A', '#3FA2DB', '#22A88F', '#FF9CC0'];
+    for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, s = 2 + Math.random() * 5; this.p.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 3.5, r: 3 + Math.random() * 4, col: cols[i % 5], life: 1, heart: Math.random() < 0.3 }); }
+    if (!this.raf) this.raf = requestAnimationFrame(() => this.loop());
+  },
+  rain() { for (let i = 0; i < 7; i++) setTimeout(() => this.burst(Math.random() * innerWidth, innerHeight * (0.1 + Math.random() * 0.3), 30), i * 140); },
+  loop() {
+    const c = this.c; c.clearRect(0, 0, innerWidth, innerHeight);
+    this.p = this.p.filter((q) => q.life > 0);
+    for (const q of this.p) {
+      q.vy += 0.16; q.x += q.vx; q.y += q.vy; q.life -= 0.012; c.globalAlpha = Math.max(0, q.life); c.fillStyle = q.col;
+      c.beginPath();
+      if (q.heart) { const r = q.r; c.moveTo(q.x, q.y + r); c.bezierCurveTo(q.x - r * 2, q.y - r * 0.5, q.x - r, q.y - r * 2, q.x, q.y - r * 0.8); c.bezierCurveTo(q.x + r, q.y - r * 2, q.x + r * 2, q.y - r * 0.5, q.x, q.y + r); }
+      else c.arc(q.x, q.y, q.r, 0, 6.29);
+      c.fill();
+    }
+    c.globalAlpha = 1; this.raf = this.p.length ? requestAnimationFrame(() => this.loop()) : 0;
+  },
+};
+
+/* ================= ortak parçalar ================= */
+let current = { screen: 'home' };
+function swap(node) { $('#app').replaceChildren(node); window.scrollTo(0, 0); }
+function topbar(back) {
+  const snd = h('button', { class: 'round-btn', type: 'button', 'aria-label': Store.d.sound ? 'Sesi kapat' : 'Sesi aç', html: Store.d.sound ? ICO.on : ICO.off });
+  snd.onclick = () => { Store.d.sound = !Store.d.sound; Store.save(); snd.innerHTML = Store.d.sound ? ICO.on : ICO.off; snd.setAttribute('aria-label', Store.d.sound ? 'Sesi kapat' : 'Sesi aç'); Sound.tap(); };
+  return h('div', { class: 'topbar' },
+    back ? h('button', { class: 'round-btn', type: 'button', 'aria-label': 'Ana sayfaya dön', html: ICO.back, onclick: renderHome }) : null,
+    h('button', { class: 'logo', type: 'button', onclick: renderHome, 'aria-label': 'Ana sayfa' }, h('span', { html: LOGO }), h('b', {}, 'Yara Bakım Masası')),
+    h('span', { class: 'sp' }), snd);
+}
+function warnBox(list) {
+  return h('section', { class: 'warn' },
+    h('h2', {}, 'Bu belirtiler varsa doktorunuza ya da hemşirenize başvurun'),
+    h('div', { class: 'warn-list' }, list.map(([ic, t]) => h('div', { class: 'wl' }, h('span', { html: WARN_ICONS[ic] }), t))));
+}
+
+/* ================= ana sayfa ================= */
+function renderHome() {
+  current = { screen: 'home' };
+  const cards = SCENARIOS.map((s) => h('button', { class: 'scn', type: 'button', onclick: () => renderPlay(s) },
+    h('div', { class: 'scn-art', html: s.thumb() }), h('h3', {}, s.title), h('p', {}, s.short),
+    h('div', { class: 'scn-foot' }, h('span', { class: 'tag' }, s.tag), h('span', { class: 'stars', html: starsHTML(Store.d.stars[s.id] || 0) }))));
+  cards.push(h('button', { class: 'scn', type: 'button', onclick: renderTimeline },
+    h('div', { class: 'scn-art', html: healScene(2) }), h('h3', {}, 'Yaram nasıl iyileşiyor?'), h('p', {}, 'Ameliyat yarasının günden güne değişimini resimlerle görün.'),
+    h('div', { class: 'scn-foot' }, h('span', { class: 'tag' }, 'Takvim'), h('span', {}))));
+  swap(h('main', { class: 'wrap' }, topbar(false),
+    h('section', { class: 'hero' },
+      h('div', {},
+        h('h1', { html: 'Yara bakımını <span>oynayarak</span> öğrenin' }),
+        h('p', {}, 'Masadaki malzemeleri sırayla seçin, Hemşire Deniz her adımda ne yaptığımızı ve nedenini anlatsın. Yanlış seçerseniz sorun değil, birlikte düzeltiriz.'),
+        h('div', { class: 'row-btns', style: { justifyContent: 'flex-start', marginTop: '20px' } },
+          h('button', { class: 'btn main', type: 'button', onclick: () => renderPlay(SCENARIOS[0]) }, 'Pansumanla başla'),
+          h('button', { class: 'btn', type: 'button', onclick: renderTimeline }, 'İyileşme takvimi'))),
+      h('div', { class: 'hero-art', html: bellyScene({ done: true, noHands: true }) })),
+    h('div', { class: 'cards' }, cards)));
+}
+
+/* ================= oyun ================= */
+function renderPlay(scn) {
+  current = { screen: 'play', id: scn.id };
+  const st = { i: 0, mistakes: 0, busy: false };
+  const stage = h('div', { class: 'stage droppable', html: scn.scene() });
+  const svg = $('svg', stage);
+  const face = h('div', { class: 'face', html: faceSVG('worry') });
+  const cap = h('div', { class: 'stage-cap', 'aria-hidden': 'true' });
+  stage.append(face, cap);
+  const A = {
+    els: (n) => $$(`[data-l="${n}"]`, svg),
+    on(n) { this.els(n).forEach((e) => e.classList.add('on')); },
+    off(n) { this.els(n).forEach((e) => e.classList.remove('on')); },
+    add(n, c) { this.els(n).forEach((e) => e.classList.add(c)); },
+    pulse(n, ms) { this.on(n); setTimeout(() => this.off(n), ms); },
+  };
+  const strip = h('div', { class: 'strip', 'aria-label': 'Adımlar' });
+  const drawStrip = () => {
+    strip.replaceChildren(...scn.steps.map((s, i) => h('div', { class: 'dot' + (i < st.i ? ' done' : i === st.i ? ' now' : ''), title: i < st.i ? s.title : `${i + 1}. adım`, html: i < st.i ? itemSVG(s.item) : String(i + 1) })));
+  };
+  const bubbleBox = h('div', {});
+  const say = (kind, title, text, why) => {
+    cap.className = 'stage-cap ' + (kind || ''); cap.textContent = title;
+    bubbleBox.replaceChildren(h('div', { class: 'bubble ' + (kind || ''), role: 'status', 'aria-live': 'polite' },
+      h('h2', {}, title), h('p', {}, text), why ? h('p', { class: 'why' }, h('b', {}, 'Neden? '), why) : null));
+  };
+  const hintBtn = h('button', { class: 'btn blue', type: 'button' }, 'İpucu');
+  hintBtn.onclick = () => {
+    const step = scn.steps[st.i]; if (!step) return;
+    say('', `${st.i + 1}. adım`, step.hint);
+    const btn = $(`.item[data-id="${step.item}"]`, table);
+    if (btn) { btn.classList.remove('hint'); void btn.offsetWidth; btn.classList.add('hint'); }
+  };
+  const ids = [...new Set([...scn.steps.map((s) => s.item), ...scn.distractors.map((d) => d.item)])];
+  const table = h('section', { class: 'table', 'aria-label': 'Malzeme masası' }, h('p', { class: 'table-title' }, 'Masadaki malzemeler'));
+  const grid = h('div', { class: 'items' });
+  shuffle(ids).forEach((id) => {
+    const b = h('button', { class: 'item', type: 'button', 'data-id': id, html: itemSVG(id) + `<span>${ITEMS[id].label}</span>` });
+    enableDrag(b, { onTap: () => choose(id, b), onDrop: (u) => { if (u && u.closest('.stage')) choose(id, b); } });
+    grid.append(b);
+  });
+  table.append(grid);
+
+  function choose(id, btn) {
+    if (st.busy) return;
+    const step = scn.steps[st.i]; if (!step) return;
+    if (id === step.item) {
+      st.busy = true; Sound.ok();
+      fly(btn, stage).then(() => {
+        step.fx(A);
+        if (step.face) face.innerHTML = faceSVG(step.face);
+        say('yay', step.title, step.say, step.why);
+        btn.classList.add('used');
+        const r = stage.getBoundingClientRect(); FX.burst(r.left + r.width / 2, r.top + r.height / 2, 22);
+        st.i++; drawStrip();
+        setTimeout(() => { st.busy = false; if (st.i === scn.steps.length) finish(); }, st.i === scn.steps.length ? 600 : 700);
+      });
+    } else {
+      st.mistakes++; Sound.soft();
+      btn.classList.remove('wiggle'); void btn.offsetWidth; btn.classList.add('wiggle');
+      const d = scn.distractors.find((x) => x.item === id);
+      if (d) say('oops', `${ITEMS[id].label} kullanılmaz`, d.why);
+      else if (scn.steps.slice(st.i + 1).some((s) => s.item === id)) say('oops', 'Bunu birazdan kullanacağız', 'Önce başka bir adım var. Takılırsanız "İpucu" düğmesine dokunun.');
+      else say('oops', 'Bu adımı yaptık', 'Şimdi sıradaki adıma geçelim.');
+    }
+  }
+  function finish() {
+    const stars = st.mistakes === 0 ? 3 : st.mistakes <= 2 ? 2 : 1;
+    Store.d.stars[scn.id] = Math.max(Store.d.stars[scn.id] || 0, stars); Store.save();
+    Sound.win(); FX.rain();
+    const nextBtn = h('button', { class: 'btn main', type: 'button', onclick: () => renderDone(scn, stars) }, 'Hatırlatma kartını gör');
+    bubbleBox.append(h('div', { class: 'row-btns', style: { justifyContent: 'flex-start', marginTop: '12px' } }, nextBtn));
+  }
+
+  drawStrip();
+  say('', 'Merhaba!', scn.intro);
+  swap(h('main', { class: 'wrap' }, topbar(true),
+    h('div', { class: 'play' },
+      h('div', { class: 'play-head' }, h('h1', {}, scn.title), strip),
+      stage,
+      h('div', { class: 'nurse' },
+        h('div', { class: 'nurse-top' }, h('span', { html: NURSE }), h('div', {}, h('b', {}, 'Hemşire Deniz'), h('small', {}, 'Size adım adım eşlik ediyorum'))),
+        bubbleBox,
+        h('div', { class: 'nurse-actions' }, hintBtn, h('button', { class: 'btn', type: 'button', onclick: () => renderPlay(scn) }, 'Baştan başla'))),
+      table)));
+}
+
+function fly(btn, stage) {
+  const icon = $('svg', btn), a = icon.getBoundingClientRect(), b = stage.getBoundingClientRect();
+  if (reduceMotion || !document.body.animate) return Promise.resolve();
+  const f = h('div', { class: 'flyer', html: icon.outerHTML }); document.body.append(f);
+  const x0 = a.left, y0 = a.top, x1 = b.left + b.width / 2 - 42, y1 = Math.max(10, b.top + b.height / 2 - 42);
+  const an = f.animate([
+    { transform: `translate(${x0}px,${y0}px) scale(.9)` },
+    { transform: `translate(${(x0 + x1) / 2}px,${Math.min(y0, y1) - 70}px) scale(1.35) rotate(-12deg)`, offset: 0.45 },
+    { transform: `translate(${x1}px,${y1}px) scale(1.5)`, opacity: 1, offset: 0.8 },
+    { transform: `translate(${x1}px,${y1}px) scale(.5)`, opacity: 0 },
+  ], { duration: 820, easing: 'cubic-bezier(.3,.7,.4,1)' });
+  return an.finished.then(() => f.remove(), () => f.remove());
+}
+function enableDrag(el, { onTap, onDrop }) {
+  let sx = 0, sy = 0, ghost = null, pid = null, moved = false, ox = 0, oy = 0, hover = null;
+  el.addEventListener('pointerdown', (e) => { if (e.button !== 0) return; sx = e.clientX; sy = e.clientY; moved = false; pid = e.pointerId; try { el.setPointerCapture(pid); } catch (err) { } });
+  el.addEventListener('pointermove', (e) => {
+    if (e.pointerId !== pid) return;
+    if (!moved && Math.hypot(e.clientX - sx, e.clientY - sy) > 10) {
+      moved = true; const r = el.getBoundingClientRect(); ox = sx - r.left; oy = sy - r.top;
+      ghost = el.cloneNode(true); Object.assign(ghost.style, { position: 'fixed', left: 0, top: 0, width: r.width + 'px', zIndex: 600, pointerEvents: 'none', margin: 0 });
+      document.body.append(ghost); el.classList.add('dragging');
+    }
+    if (moved) {
+      ghost.style.transform = `translate(${e.clientX - ox}px,${e.clientY - oy}px) rotate(-4deg) scale(1.05)`;
+      const u = document.elementFromPoint(e.clientX, e.clientY), t = u && u.closest('.droppable');
+      if (t !== hover) { if (hover) hover.classList.remove('drop'); hover = t; if (t) t.classList.add('drop'); }
+    }
+  });
+  const end = (e) => {
+    if (e.pointerId !== pid) return; pid = null;
+    if (moved) {
+      const u = document.elementFromPoint(e.clientX, e.clientY);
+      ghost && ghost.remove(); ghost = null; el.classList.remove('dragging'); if (hover) hover.classList.remove('drop'); hover = null;
+      if (e.type === 'pointerup') onDrop(u);
+    } else if (e.type === 'pointerup') onTap();
+  };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTap(); } });
+}
+
+/* ================= bitiş: hatırlatma kartı ================= */
+function renderDone(scn, stars) {
+  current = { screen: 'home' };
+  swap(h('main', { class: 'wrap' }, topbar(true),
+    h('section', { class: 'done' },
+      h('div', { class: 'big-face', html: faceSVG('happy') }),
+      h('div', { class: 'stars', html: starsHTML(stars), style: { transform: 'scale(1.6)', margin: '6px 0' } }),
+      h('h1', {}, 'Harika, tamamladınız!'),
+      h('p', { style: { fontSize: '1.15rem', color: 'var(--ink-2)', maxWidth: '52ch' } }, `${scn.title}: evde hatırlamanız gereken adımlar aşağıda. Bu sayfanın ekran görüntüsünü alıp saklayabilirsiniz.`),
+      h('div', { class: 'recap' }, scn.steps.map((s, i) => h('div', { class: 'rc' }, h('span', { html: itemSVG(s.item) }),
+        h('div', {}, h('b', {}, h('span', { class: 'n' }, `${i + 1}. `), s.title), h('small', {}, s.say))))),
+      scn.distractors.length ? h('section', { class: 'warn', style: { background: '#FFEDEA', borderColor: '#FFB3A6' } },
+        h('h2', {}, 'Bunları yapmayın'),
+        h('div', { class: 'warn-list' }, scn.distractors.map((d) => h('div', { class: 'wl' }, h('span', { html: itemSVG(d.item) }), ITEMS[d.item].label)))) : null,
+      warnBox(scn.warn),
+      h('div', { class: 'row-btns' },
+        h('button', { class: 'btn main', type: 'button', onclick: () => renderPlay(scn) }, 'Tekrar oyna'),
+        h('button', { class: 'btn', type: 'button', onclick: renderHome }, 'Diğer konular')))));
+  setTimeout(() => FX.rain(), 150);
+}
+
+/* ================= iyileşme takvimi ================= */
+function renderTimeline() {
+  current = { screen: 'timeline' };
+  let i = 0;
+  const art = h('div', { class: 'tl-art' });
+  const card = h('div', {});
+  const range = h('input', { type: 'range', id: 'tlRange', min: '0', max: String(HEAL_INFO.length - 1), step: '1', value: '0', 'aria-label': 'İyileşme zamanı' });
+  const btns = h('div', { class: 'tl-steps' }, HEAL_INFO.map((x, k) => h('button', { type: 'button', onclick: () => show(k) }, x.when)));
+  function show(k) {
+    i = k; range.value = k; Sound.tap();
+    art.innerHTML = healScene(k);
+    $$('button', btns).forEach((b, j) => b.classList.toggle('on', j === k));
+    const x = HEAL_INFO[k];
+    card.replaceChildren(h('div', { class: 'tl-card' }, h('span', { class: 'when' }, x.when), h('h2', {}, x.t), h('p', {}, x.d),
+      h('div', { class: 'todo' }, x.todo.map((t) => h('div', {}, t)))));
+  }
+  range.addEventListener('input', () => show(+range.value));
+  swap(h('main', { class: 'wrap' }, topbar(true),
+    h('h1', { style: { fontSize: 'clamp(2rem,5vw,3rem)', marginBottom: '6px' } }, 'Yaram nasıl iyileşiyor?'),
+    h('p', { style: { color: 'var(--ink-2)', marginBottom: '16px', fontSize: '1.1rem' } }, 'Kaydırıcıyı sürükleyin ya da bir zamana dokunun; ameliyat izinin nasıl değiştiğini görün.'),
+    h('div', { class: 'tl' }, h('div', {}, art, range, btns), card),
+    h('div', { style: { marginTop: '20px' } }, warnBox(SCENARIOS[0].warn))));
+  show(0);
+}
+
+/* ================= açılış ================= */
+function start(data) {
+  Store.load(); FX.init();
+  const s = data && data.screen, scn = s === 'play' && SCENARIOS.find((x) => x.id === data.id);
+  if (scn) renderPlay(scn); else if (s === 'timeline') renderTimeline(); else renderHome();
+}
+try { window.claude && window.claude.hot && window.claude.hot.snapshot && window.claude.hot.snapshot(() => ({ ...current })); } catch (e) { }
+if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start);
+else start((window.claude && window.claude.hot && window.claude.hot.data) || {});
+</script>
