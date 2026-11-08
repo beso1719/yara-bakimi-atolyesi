@@ -83,6 +83,7 @@ async function runFinal() {
     h('p', { class: 'foot-note', style: { marginTop: 0 } }, 'İndikatör bandı ne kadar koyuysa o konuda o kadar güvendesin. Zayıf kalan bölümü yeniden oynayabilirsin.'),
     h('div', { class: 'res-actions' },
       h('button', { class: 'btn primary', type: 'button', onclick: runFinal }, 'Yeniden gir'),
+      h('a', { class: 'btn', href: 'sinav/' }, 'Canlı mini sınav'),
       h('button', { class: 'btn ghost', type: 'button', onclick: renderMenu }, 'Bölümler')))));
   if (p >= 0.7) setTimeout(() => FX.rain(), 200);
 }
@@ -92,6 +93,8 @@ function start(data) {
   Store.load(); FX.init(); updateBar();
   $('#homeBtn').onclick = renderMenu;
   $('#soundBtn').onclick = () => { Store.data.sound = !Store.data.sound; Store.save(); updateBar(); if (Store.data.sound) Sound.tap(); };
+  let bolum = null; try { bolum = new URLSearchParams(location.search).get('bolum'); } catch (e) { }
+  if (bolum && LEVELS.some((l) => l.id === bolum)) data = { screen: 'intro', id: bolum };
   const s = data && data.screen;
   const lv = s === 'intro' && LEVELS.find((l) => l.id === data.id);
   if (lv) renderIntro(lv); else if (s === 'final') renderFinalIntro(); else renderMenu();

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Canlı Mini Sınav — Yara Bakımı Atölyesi</title>
+<meta name="description" content="Yara bakımı canlı mini sınavı: QR ile telefondan katılım, anlık cevap dağılımı ve sınıf analizi.">
+<meta name="theme-color" content="#060A12">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230A7A72'/%3E%3Cpath d='M18 32h28M32 18v28' stroke='%23fff' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Figtree:ital,wght@0,400..800;1,400..600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="../canli/css/base.css">
+<link rel="stylesheet" href="../canli/css/deck.css">
+<link rel="stylesheet" href="../canli/css/quiz.css">
+<link rel="stylesheet" href="../canli/css/analytics.css">
+<style>
+  body.host{min-height:100dvh;overflow-x:hidden}
+  .home{position:relative;z-index:2;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:48px 16px 40px;text-align:center}
+  .home h1{font:800 clamp(40px,7vw,92px)/.95 var(--f-display);letter-spacing:-.04em}
+  .home h1 em{font-family:var(--f-serif);font-weight:400;font-style:italic;color:var(--teal)}
+  .home .lead{max-width:62ch;color:var(--ink-2);font-size:clamp(16px,1.6vw,20px)}
+  .steps3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;width:min(1080px,100%)}
+  .steps3 .card{align-items:center;text-align:center;padding:22px 18px}
+  .steps3 .card h3{font-size:20px}
+  .steps3 .card p{font-size:15px;color:var(--ink-2)}
+  .setup{display:flex;flex-wrap:wrap;gap:14px 24px;justify-content:center;font-size:17px;color:var(--ink-2)}
+  .setup select{margin-left:8px;font:600 17px var(--f-body);color:var(--ink);background:var(--surface-solid);border:1px solid var(--stroke-2);border-radius:12px;padding:8px 12px}
+  .actions{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+  .actions .btn{font-size:18px;padding:14px 22px}
+  .actions .btn.primary{font-size:21px;padding:16px 28px}
+  .past{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;color:var(--ink-3);font-size:15px}
+  .past input{width:9ch;font:700 16px var(--f-mono);letter-spacing:.12em;text-align:center;color:var(--ink);background:var(--surface-solid);border:1px solid var(--stroke-2);border-radius:10px;padding:7px 8px}
+  .past a{color:var(--teal)}
+  .back{position:fixed;top:14px;left:16px;z-index:3;display:inline-flex;gap:8px;align-items:center;color:var(--ink-2);text-decoration:none;font-weight:600;font-size:15px;padding:8px 12px;border-radius:12px;border:1px solid var(--stroke);background:var(--surface)}
+  .back:hover{color:var(--ink);border-color:var(--teal)}
+  .back svg{width:18px;height:18px}
+  .tools{position:fixed;top:14px;right:16px;z-index:3;display:flex;gap:6px}
+  body.quiz-on .home,body.quiz-on .back,body.quiz-on .tools{visibility:hidden}
+  @media (max-width:760px){.steps3{grid-template-columns:1fr}}
+</style>
+</head>
+<body class="host">
+<canvas id="bg" aria-hidden="true"></canvas>
+<a class="back" href="../"><i data-lucide="arrow-left"></i>Oyuna dön</a>
+<div class="tools">
+  <button class="icon-btn" id="snd" type="button" aria-label="Sesi aç/kapa"><i data-lucide="volume-2"></i></button>
+  <button class="icon-btn" id="thm" type="button" aria-label="Açık/koyu tema"><i data-lucide="sun-moon"></i></button>
+  <button class="icon-btn" id="fs" type="button" aria-label="Tam ekran"><i data-lucide="maximize"></i></button>
+</div>
+
+<main class="home">
+  <div class="kicker">Yara Bakımı Atölyesi · Sınıf etkinliği</div>
+  <h1>Canlı <em>mini sınav</em></h1>
+  <p class="lead">Ekrandaki QR kodu herkes telefonuyla okutur ve adını yazar. Sorular sırayla gelir. Her sorudan sonra sınıfın cevap dağılımı ve açıklama, en sonda da kimin neyi bildiği ve en çok nerede hata yapıldığı gösterilir.</p>
+  <div class="steps3">
+    <div class="card"><span class="num">1</span><div class="ic"><i data-lucide="scan-qr-code"></i></div><h3>QR’ı okut</h3><p>Telefon kamerasıyla kodu okut ya da adrese girip PIN’i yaz.</p></div>
+    <div class="card"><span class="num">2</span><div class="ic"><i data-lucide="user-round-pen"></i></div><h3>Adını yaz</h3><p>Adın ve avatarın ekranda belirir. 5 kişi de olur, 100 kişi de.</p></div>
+    <div class="card"><span class="num">3</span><div class="ic"><i data-lucide="chart-column"></i></div><h3>Cevapla, gör</h3><p>Hem doğru hem hızlı olan çok puan alır. Sonuçlar anlık.</p></div>
+  </div>
+  <div class="setup">
+    <label>Soru seti <select id="qset"><option value="short">Mini, 10 soru</option><option value="full">Tam, 18 soru</option></select></label>
+    <label>Süre <select id="qtime"><option value="20">20 sn</option><option value="30">30 sn</option><option value="15">15 sn</option></select></label>
+  </div>
+  <div class="actions">
+    <button class="btn primary" id="live" type="button"><i data-lucide="radio"></i>Canlı sınavı başlat</button>
+    <button class="btn" id="demo" type="button"><i data-lucide="bot"></i>Demo sınıf (prova)</button>
+  </div>
+  <div class="past" id="past">
+    <span>Geçmiş bir sınavın analizi:</span>
+    <input id="pinIn" inputmode="numeric" maxlength="6" placeholder="PIN" aria-label="Sınav PIN’i">
+    <button class="btn" id="openPin" type="button" style="padding:7px 14px">Aç</button>
+    <span id="lastPin"></span>
+  </div>
+</main>
+
+<div id="quiz" class="quiz" hidden></div>
+<section id="analysis" class="analysis" hidden></section>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.3/confetti.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="../canli/js/config.js"></script>
+<script src="../canli/js/core.js"></script>
+<script>
+  // Görseller bu sitede tek klasörde: hem /sinav/ hem /katil/ için aynı göreli yol çalışır.
+  Y.img = (slide, k = 1) => `../canli/img/s${String(slide).padStart(2, '0')}-${k}.jpg`;
+  // Sunum (Deck) yerine küçük bir köprü: sınav kodu Deck'i çağırınca ana ekrana ya da oyundaki bölüme gider.
+  window.Deck = {
+    on(){}, next(){}, prev(){},
+    go(id){ if (id === 'kapanis' || id === 'sinav') { Analytics.close(); Home.show(); } else window.open('../?bolum=' + encodeURIComponent(id), '_blank'); },
+    actions: {
+      sound(){ const on = Y.Sfx.toggle(); Y.toast(on ? 'Ses açık' : 'Ses kapalı'); Home.syncTools(); },
+      fullscreen(){ if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.().catch(() => {}); }
+    }
+  };
+</script>
+<script src="../canli/js/fx.js"></script>
+<script src="../canli/js/quiz-data.js"></script>
+<script src="../canli/js/db.js"></script>
+<script src="../canli/js/quiz-host.js"></script>
+<script src="../canli/js/analytics.js"></script>
+<script>
+(function(){
+  const $ = Y.$;
+  const scale = () => document.documentElement.style.setProperty('--scale', Math.min(innerWidth / 1600, innerHeight / 900));
+  scale(); addEventListener('resize', scale);
+
+  const theme = Y.store.get('yara_theme', 'dark');
+  const applyTheme = t => { document.documentElement.dataset.theme = t; FX.setLight(t === 'light'); };
+  applyTheme(theme);
+
+  const Home = window.Home = {
+    show(){
+      document.body.classList.remove('quiz-on');
+      const last = Y.store.get('yara_last_pin');
+      $('#lastPin').innerHTML = last ? `Son sınav: <a href="?analiz=${last}" class="mono">${last}</a>` : '';
+      Y.icons();
+    },
+    syncTools(){
+      $('#snd').innerHTML = `<i data-lucide="${Y.Sfx.on ? 'volume-2' : 'volume-x'}"></i>`;
+      Y.icons($('.tools'));
+    }
+  };
+  const opts = () => ({ set: $('#qset').value, time: +$('#qtime').value });
+  $('#live').onclick = () => Quiz.start({ ...opts(), demo: false });
+  $('#demo').onclick = () => Quiz.start({ ...opts(), demo: true });
+  $('#openPin').onclick = () => { const p = $('#pinIn').value.replace(/\D/g, ''); if (p.length === 6) Analytics.openPin(p); else Y.toast('PIN 6 haneli olmalı.'); };
+  $('#pinIn').onkeydown = e => { if (e.key === 'Enter') $('#openPin').click(); };
+  $('#snd').onclick = () => Deck.actions.sound();
+  $('#fs').onclick = () => Deck.actions.fullscreen();
+  $('#thm').onclick = () => { const t = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'; Y.store.set('yara_theme', t); applyTheme(t); };
+  if (!DB.hasLive) $('#live').title = 'Supabase ayarı yok; yalnız demo çalışır.';
+
+  addEventListener('keydown', e => {
+    if (e.target.matches('input,select,textarea')) return;
+    if (Quiz.active) return Quiz.key(e);
+    if (e.key === 'f' || e.key === 'F') Deck.actions.fullscreen();
+  });
+
+  Home.show(); Home.syncTools();
+  const qs = new URLSearchParams(location.search);
+  if (qs.get('analiz')) Analytics.openPin(qs.get('analiz'));
+  if (qs.get('demo') === '1') Quiz.start({ ...opts(), demo: true });
+})();
+</script>
+</body>
+</html>

@@ -38,7 +38,7 @@ const ICON = {
 const starsHTML = (n, max = 3) => Array.from({ length: max }, (_, i) => ICON.star(i < n)).join('');
 
 /* ================= kayıt ================= */
-const STORE_KEY = 'yara-bakimi-atolyesi-v1';
+const STORE_KEY = 'yara-bakimi-atolyesi-v2';
 const Store = {
   data: { levels: {}, final: null, sound: true },
   load() { try { const d = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (d) this.data = { ...this.data, ...d, levels: d.levels || {} }; } catch (e) { } },
@@ -194,12 +194,13 @@ function renderMenu() {
 
   const hero = h('section', { class: 'hero' },
     h('div', { class: 'hero-text' },
-      h('p', { class: 'eyebrow' }, 'Hemşirelik · Yara bakımı ve aseptik teknik'),
-      h('h1', { html: 'Yarayı evresiyle tanı, <em>steril</em> kal.' }),
-      h('p', { class: 'lede' }, 'Yanık derinliği, bası yarası evreleri ve cerrahi kesinin iyileşme fazları; ardından doğru tedavi seçimi ve aseptik pansuman. Her hata bir eldivene mal olur, 5 eldivenin var.'),
+      h('p', { class: 'eyebrow' }, 'Hemşirelik · Yara bakımında hemşirelik eğitimi'),
+      h('h1', { html: 'Yarayı tanı, evresini bil, <em>doğru</em> bakımı seç.' }),
+      h('p', { class: 'lede' }, 'Yaranın sınıflandırılması, iyileşme evreleri, pansuman, bası yarası, yanık ve cerrahi yara bakımı. Her hata bir eldivene mal olur, 5 eldivenin var. Sonunda sınıfça canlı mini sınav!'),
       h('div', { class: 'hero-cta' },
         h('button', { class: 'btn primary', type: 'button', onclick: () => renderIntro(next) }, total ? `Devam et: ${next.title}` : 'Başla: ' + next.title),
-        h('button', { class: 'btn ghost', type: 'button', onclick: renderFinalIntro }, 'Final sınavı'))),
+        h('button', { class: 'btn ghost', type: 'button', onclick: renderFinalIntro }, 'Final sınavı'),
+        h('a', { class: 'btn ghost', href: 'sinav/' }, 'Canlı mini sınav'))),
     heroPanel(total, max));
 
   const cards = h('div', { class: 'levels' }, LEVELS.map((l, i) => {
@@ -219,15 +220,20 @@ function renderMenu() {
     h('div', {}, h('h3', {}, 'Final sınavı'), h('p', {}, fin ? `En iyi sonucun: ${fin.correct}/${fin.total} doğru · ${fin.grade}` : 'Tüm bölümlerden karışık 20 soru, soru başına 30 saniye. Sonunda konu konu karne alırsın.')),
     h('button', { class: 'btn primary', type: 'button', onclick: renderFinalIntro }, 'Sınava gir'));
 
+  const liveCard = h('div', { class: 'final-card live-card' },
+    h('div', { class: 'lvl-ic', html: LEVEL_ICONS.live }),
+    h('div', {}, h('h3', {}, 'Canlı mini sınav (sınıfça)'), h('p', {}, 'Projeksiyonda QR kod açılır; herkes telefonuyla katılır. Sorular tek tek gelir, cevaplar ve hatalar ekranda anlık görünür, sonunda konu konu sınıf analizi çıkar. 5 kişi de olur, 100 kişi de.')),
+    h('a', { class: 'btn primary', href: 'sinav/' }, 'Sınavı yönet'));
+
   swap(h('main', { class: 'wrap' }, hero,
     h('h2', { class: 'sec-title' }, 'Bölümler', h('small', {}, 'İstediğin sırayla oynayabilirsin')),
-    cards, finalCard,
-    h('p', { class: 'foot-note' }, 'İçerik lisans düzeyi hemşirelik eğitimi için özetlenmiştir (NPIAP 2016 bası yarası sınıflaması, Dokuzlar Kuralı, Parkland formülü, temel aseptik teknik ilkeleri). Kurumunuzun protokolleri ve hekim istemi her zaman önceliklidir.')));
+    cards, finalCard, liveCard,
+    h('p', { class: 'foot-note' }, 'İçerik “Yara Bakımında Hemşirelik Eğitimi” sunumundan (Berfin Çelik, Sude Başeğmez, Mislina Boran, Emine Yurtsever, Halise Bozkurt, Muhammed Sefa Demirezen) hazırlanmıştır. Kurumunuzun protokolleri ve hekim istemi her zaman önceliklidir.')));
 }
 
 function heroPanel(total, max) {
-  const phases = [['hemo', 'Hemostaz', 'dakikalar – saatler'], ['infl', 'İnflamasyon', '0 – 4/6. gün'], ['prol', 'Proliferasyon', '4 – 21. gün'], ['mat', 'Maturasyon', '21. gün – 1-2 yıl']];
-  const art = h('div', { class: 'hero-art', role: 'img', 'aria-label': 'Cerrahi kesinin iyileşme fazları animasyonu' });
+  const phases = [['hemo', 'Hemostaz', 'ilk saatler'], ['infl', 'İnflamasyon', 'ilk günler'], ['prol', 'Proliferasyon', '4 – 21. gün'], ['mat', 'Maturasyon', 'aylar']];
+  const art = h('div', { class: 'hero-art', role: 'img', 'aria-label': 'Yara iyileşme evreleri animasyonu' });
   phases.forEach(([k], i) => { const d = h('div', { html: phaseArt(k) }).firstElementChild; d.style.opacity = i === 0 ? 1 : 0; art.append(d); });
   const capName = h('b', {}, phases[0][1]); const capTime = h('span', {}, phases[0][2]);
   const dots = h('div', { class: 'phase-dots' }, phases.map((_, i) => h('i', { class: i === 0 ? 'on' : '' })));
@@ -357,7 +363,7 @@ function renderResult(run) {
   swap(h('main', { class: 'wrap' }, h('section', { class: 'result' },
     h('p', { class: 'eyebrow' }, L.title + ' tamamlandı'),
     h('div', { class: 'big-stars', html: starsHTML(stars) }),
-    h('h1', {}, stars === 3 ? 'Kusursuz aseptik!' : stars === 2 ? 'Güvenli uygulama' : 'Geçtin, tekrar et'),
+    h('h1', {}, stars === 3 ? 'Kusursuz!' : stars === 2 ? 'Güvenli uygulama' : 'Geçtin, tekrar et'),
     h('p', { class: 'prompt', style: { margin: 0 } }, stars === 3 ? 'Neredeyse hiç hata yapmadın. Bu bölümü klinikte de böyle uygula.' : 'Yanlış yaptığın turları tekrar oynayarak üç yıldıza çıkabilirsin.'),
     h('div', { class: 'stats' },
       h('div', { class: 'stat' }, h('b', {}, '%' + Math.round(acc * 100)), h('span', {}, 'Doğruluk')),

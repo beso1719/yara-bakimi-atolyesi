@@ -8,6 +8,9 @@ const LEVEL_ICONS = (() => {
     flask: w('<path d="M9 3h6M10 3v6.2L4.8 18a2 2 0 0 0 1.7 3h11a2 2 0 0 0 1.7-3L14 9.2V3"/><path d="M7.4 15h9.2"/>'),
     gauze: w('<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M3.5 9.2h17M3.5 14.8h17M9.2 3.5v17M14.8 3.5v17" stroke-width="1.1"/>'),
     search: w('<circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/><path d="M8 10.5h5M10.5 8v5" stroke-width="1.5"/>'),
+    layers: w('<path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5l9 4.5 9-4.5"/>'),
+    sprout: w('<path d="M12 21v-9"/><path d="M12 12c0-4 2.6-6.6 7-7 0 4.4-2.6 7-7 7z"/><path d="M12 14.5C12 11 9.8 8.8 5.5 8.5c0 3.8 2.3 6 6.5 6z"/>'),
+    live: w('<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/><path d="M9.5 9.5l2 2 3.5-3.5"/>'),
     cap: w('<path d="M2 9.5l10-5 10 5-10 5z"/><path d="M6 11.5v4.8c3.3 2.3 8.7 2.3 12 0v-4.8M22 9.5v5"/>'),
   };
 })();

@@ -1,0 +1,84 @@
+/* Tasarım belirteçleri — koyu sinematik klinik tema (varsayılan) + açık tema.
+   Renk anlamları: teal = iyileşme/doğru, coral = yara/tehlike, amber = dikkat, sky = bilgi. */
+:root{
+  --bg:#060A12; --bg-2:#0A111D; --bg-3:#101A2A;
+  --surface:rgba(148,178,214,.055); --surface-2:rgba(148,178,214,.10); --surface-solid:#0F1828;
+  --stroke:rgba(160,190,225,.14); --stroke-2:rgba(160,190,225,.26);
+  --ink:#EEF3F8; --ink-2:#AEBBCB; --ink-3:#7A889B;
+  --teal:#2DD4BF; --teal-deep:#0F766E; --teal-soft:rgba(45,212,191,.14);
+  --coral:#FF6B5E; --coral-deep:#C2410C; --coral-soft:rgba(255,107,94,.14);
+  --amber:#FBBF24; --amber-soft:rgba(251,191,36,.14);
+  --sky:#60A5FA; --sky-soft:rgba(96,165,250,.14);
+  --violet:#A78BFA; --violet-soft:rgba(167,139,250,.14);
+  --green:#34D399; --red:#F87171;
+  --ans-a:#E5484D; --ans-b:#2F6FEB; --ans-c:#C98A04; --ans-d:#1E9E55;
+  --glow-a:#2DD4BF; --glow-b:#6366F1;
+  --shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 24px 60px -24px rgba(0,0,0,.7);
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Figtree","Segoe UI",system-ui,sans-serif;
+  --f-serif:"Instrument Serif",Georgia,serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --r:22px; --r-sm:14px;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  color-scheme:dark;
+}
+:root[data-theme="light"]{
+  --bg:#F4F7FA; --bg-2:#EAF0F5; --bg-3:#DFE8EF;
+  --surface:rgba(15,40,70,.045); --surface-2:rgba(15,40,70,.08); --surface-solid:#FFFFFF;
+  --stroke:rgba(15,40,70,.12); --stroke-2:rgba(15,40,70,.22);
+  --ink:#0B1626; --ink-2:#3C4C60; --ink-3:#66768A;
+  --teal:#0D9488; --teal-deep:#0F766E; --teal-soft:rgba(13,148,136,.12);
+  --coral:#DC3B2E; --coral-soft:rgba(220,59,46,.10);
+  --amber:#B45309; --amber-soft:rgba(180,83,9,.10);
+  --sky:#2563EB; --sky-soft:rgba(37,99,235,.10);
+  --violet:#7C3AED; --violet-soft:rgba(124,58,237,.10);
+  --green:#15803D; --red:#DC2626;
+  --shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 20px 50px -28px rgba(15,40,70,.35);
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--f-body);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.45}
+img{max-width:100%;display:block}
+h1,h2,h3,h4{font-family:var(--f-display);margin:0;line-height:1.05;letter-spacing:-.02em;text-wrap:balance;font-weight:700}
+p{margin:0;text-wrap:pretty}
+:focus-visible{outline:3px solid var(--teal);outline-offset:3px;border-radius:10px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:0}
+.serif{font-family:var(--f-serif);font-style:italic;font-weight:400;letter-spacing:0}
+.muted{color:var(--ink-2)} .small{font-size:.85em}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.t-teal{color:var(--teal)} .t-coral{color:var(--coral)} .t-amber{color:var(--amber)} .t-sky{color:var(--sky)} .t-violet{color:var(--violet)}
+
+/* Butonlar */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.6em;min-height:48px;padding:.75em 1.4em;border-radius:999px;border:1px solid var(--stroke-2);background:var(--surface-2);font-weight:650;transition:transform .18s var(--ease),background .2s,border-color .2s,box-shadow .2s}
+.btn:hover{background:var(--surface);border-color:var(--teal)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(135deg,var(--teal),#22B8CF);color:#04211D;border-color:transparent;box-shadow:0 10px 40px -10px rgba(45,212,191,.6)}
+.btn.primary:hover{box-shadow:0 14px 50px -10px rgba(45,212,191,.85)}
+.btn.coral{background:linear-gradient(135deg,var(--coral),#F97316);color:#2A0804;border-color:transparent}
+.btn svg{width:1.15em;height:1.15em}
+.icon-btn{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;border:1px solid transparent;background:transparent;color:var(--ink-2);transition:background .2s,color .2s,border-color .2s}
+.icon-btn:hover{background:var(--surface-2);color:var(--ink);border-color:var(--stroke)}
+.icon-btn svg{width:20px;height:20px}
+.icon-btn.on{color:var(--teal)}
+
+/* Rozet/çip */
+.chip{display:inline-flex;align-items:center;gap:.45em;padding:.38em .9em;border-radius:999px;border:1px solid var(--stroke);background:var(--surface);font-weight:600;font-size:.92em;white-space:nowrap}
+.chip svg{width:1em;height:1em}
+.chip.teal{color:var(--teal);background:var(--teal-soft);border-color:transparent}
+.chip.coral{color:var(--coral);background:var(--coral-soft);border-color:transparent}
+.chip.amber{color:var(--amber);background:var(--amber-soft);border-color:transparent}
+.chip.sky{color:var(--sky);background:var(--sky-soft);border-color:transparent}
+.chip.violet{color:var(--violet);background:var(--violet-soft);border-color:transparent}
+
+/* Cam kart */
+.glass{background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--stroke);border-radius:var(--r);box-shadow:var(--shadow);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+
+.toast{position:fixed;left:50%;bottom:84px;transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:200;padding:.8em 1.2em;border-radius:14px;background:var(--surface-solid);border:1px solid var(--stroke-2);box-shadow:var(--shadow);font-weight:600;transition:opacity .25s,transform .25s var(--ease);max-width:min(92vw,560px);text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}

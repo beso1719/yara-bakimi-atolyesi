@@ -1,0 +1,91 @@
+/* Sonuç analizi — tam sayfa, kaydırılabilir, yazdırılabilir */
+.analysis{position:fixed;inset:0;z-index:60;overflow:auto;background:var(--bg);color:var(--ink)}
+.analysis[hidden]{display:none}
+.an{max-width:1240px;margin:0 auto;padding:28px 24px 80px;display:flex;flex-direction:column;gap:22px}
+.an-head{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid var(--stroke)}
+.an-head h1{font-size:clamp(34px,5vw,56px);letter-spacing:-.03em}
+.an-head h1 em{font-family:var(--f-serif);font-style:italic;font-weight:400;color:var(--teal)}
+.an-head .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.an-actions{display:flex;gap:10px;flex-wrap:wrap}
+.an-actions .btn{min-height:44px;padding:.55em 1.1em;font-size:15px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi{padding:18px 20px;border-radius:18px;background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--stroke)}
+.kpi small{display:block;color:var(--ink-2);font-weight:600;font-size:14px}
+.kpi b{display:block;font:800 clamp(34px,4vw,48px)/1.1 var(--f-display);letter-spacing:-.03em;margin-top:6px;font-variant-numeric:tabular-nums}
+.kpi span{color:var(--ink-3);font-size:13px}
+.kpi.hero{background:linear-gradient(135deg,var(--teal-soft),var(--surface));border-color:color-mix(in oklab,var(--teal) 40%,transparent)}
+.kpi.hero b{color:var(--teal)}
+.an-sec{padding:22px;border-radius:20px;background:var(--surface);border:1px solid var(--stroke)}
+.an-sec>h2{font-size:24px;margin-bottom:4px}
+.an-sec>p.sub{color:var(--ink-2);font-size:15px;margin-bottom:16px}
+.two{display:grid;grid-template-columns:1.2fr .8fr;gap:22px}
+
+/* Yatay çubuklar (konu, soru) */
+.hb{display:grid;grid-template-columns:minmax(150px,230px) 1fr 64px auto;gap:12px;align-items:center;padding:8px 0}
+.hb .lab{font-weight:600;font-size:15px}
+.hb .track{position:relative;height:22px;border-radius:6px;background:var(--surface-2)}
+.hb .fillb{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0;background:var(--teal);width:0;transition:width 1s var(--ease)}
+.hb .th{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed var(--ink-3)}
+.hb .val{font:700 16px var(--f-mono);text-align:right}
+.st{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap}
+.st svg{width:14px;height:14px}
+.st.good{background:color-mix(in oklab,#16A34A 16%,transparent);color:#4ADE80}
+.st.warn{background:color-mix(in oklab,#D97706 18%,transparent);color:#FBBF24}
+.st.crit{background:color-mix(in oklab,#DC2626 18%,transparent);color:#F87171}
+:root[data-theme="light"] .st.good{color:#15803D} :root[data-theme="light"] .st.warn{color:#B45309} :root[data-theme="light"] .st.crit{color:#B91C1C}
+.axis-note{display:flex;justify-content:space-between;color:var(--ink-3);font-size:12px;margin:2px 0 0;padding-left:calc(min(230px,30%) + 12px);padding-right:140px}
+
+/* Soru satırları: yığılmış dağılım */
+.qrow{display:grid;grid-template-columns:36px 1fr 260px 64px 70px;gap:14px;align-items:center;padding:12px 0;border-top:1px solid var(--stroke)}
+.qrow:first-of-type{border-top:0}
+.qrow .qi{font:700 14px var(--f-mono);color:var(--ink-3)}
+.qrow .qt{font-size:15px;line-height:1.35}
+.qrow .qt small{display:block;color:var(--ink-3);font-size:12px;margin-top:2px}
+.stack{display:flex;height:22px;gap:2px;border-radius:6px;overflow:hidden;background:var(--surface-2)}
+.stack i{display:block;height:100%;min-width:0;cursor:default}
+.stack .c{background:var(--teal)} .stack .m{background:var(--coral)} .stack .w{background:color-mix(in oklab,var(--ink-3) 55%,transparent)} .stack .n{background:transparent}
+.legend-an{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--ink-2);margin-bottom:6px}
+.legend-an i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+/* Tekrar kartları */
+.redo{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.redo .card{padding:18px;gap:8px}
+.redo .card h3{font-size:17px;line-height:1.35;font-family:var(--f-body);font-weight:700}
+.redo .card p{font-size:14.5px}
+.redo .mis{padding:10px 12px;border-radius:12px;background:var(--coral-soft);font-size:14px}
+.redo .btn{align-self:flex-start;min-height:40px;font-size:14px;padding:.45em 1em;margin-top:4px}
+.all-good{display:flex;gap:12px;align-items:center;color:var(--ink-2)} .all-good svg{color:var(--teal)}
+
+/* Histogram */
+.hist{display:flex;align-items:flex-end;gap:8px;height:200px;padding-top:10px}
+.hist .hcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.hist .hbar{width:100%;max-width:70px;border-radius:4px 4px 0 0;background:var(--teal);height:0;transition:height 1s var(--ease)}
+.hist .hcol b{font:700 14px var(--f-mono)} .hist .hcol small{color:var(--ink-3);font-size:12px;white-space:nowrap}
+
+/* Tablo */
+.tbl-wrap{overflow:auto;max-height:520px;border-radius:12px;border:1px solid var(--stroke)}
+table.tbl{width:100%;border-collapse:collapse;font-size:15px}
+.tbl th,.tbl td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--stroke);white-space:nowrap}
+.tbl th{position:sticky;top:0;background:var(--surface-solid);font-size:13px;color:var(--ink-2);cursor:pointer;user-select:none}
+.tbl th[aria-sort="ascending"]::after{content:" ▲"} .tbl th[aria-sort="descending"]::after{content:" ▼"}
+.tbl td.num{font-family:var(--f-mono);text-align:right} .tbl th.num{text-align:right}
+.tip{position:fixed;z-index:400;pointer-events:none;padding:8px 12px;border-radius:10px;background:var(--surface-solid);border:1px solid var(--stroke-2);box-shadow:var(--shadow);font-size:13px;max-width:320px;opacity:0;transition:opacity .12s}
+.tip.on{opacity:1}
+
+@media (max-width:860px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .two{grid-template-columns:1fr}
+  .hb{grid-template-columns:110px 1fr 48px;}
+  .hb .st{display:none}
+  .qrow{grid-template-columns:28px 1fr 56px;}
+  .qrow .stack{grid-column:2 / -1;grid-row:2}
+  .qrow .tm{display:none}
+  .axis-note{display:none}
+}
+@media print{
+  body.deck-body{overflow:visible;height:auto}
+  #bg,#fx,.grain,#viewport,.hud,.foot,.an-actions,#toast{display:none!important}
+  .analysis{position:static;overflow:visible}
+  .an-sec,.kpi{break-inside:avoid}
+  .tbl-wrap{max-height:none;overflow:visible}
+}
