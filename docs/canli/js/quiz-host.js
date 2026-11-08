@@ -30,6 +30,8 @@ async function ensureLive(){
   if (!liveDb){
     liveDb = DB.make(false);
     await liveDb.create('Yara Bakımı Atölyesi');
+    // telefon yönetici paneli için: sunucu anahtarını yönetici şifresiyle kilitle
+    if (Quiz.adminPass) { try { await liveDb.host({ deck_pos: await DB.seal(Quiz.adminPass, liveDb.session.pin + '.' + liveDb.session.token) }); } catch (e) { console.warn(e); } }
     liveDb.on('session', s => { if (s.remote_seq != null && s.remote_seq !== ensureLive.seq){ const first = ensureLive.seq == null; ensureLive.seq = s.remote_seq; if (!first) remoteCmd(s.remote_cmd); } });
   }
   return liveDb;
@@ -41,18 +43,7 @@ function remoteCmd(cmd){
   else if (cmd === 'start') { if (!Quiz.active && window.Home && Home.startFromRemote) Home.startFromRemote(); }
 }
 Quiz.ensureLive = ensureLive;
-Quiz.remoteUrl = () => liveDb && liveDb.session ? joinUrl() + '?k=' + liveDb.session.pin + '.' + liveDb.session.token : null;
-
-Quiz.openRemote = async () => {
-  const box = $('#remote-qr'), st = $('#remote-status');
-  box.innerHTML = '<div class="dots"><i></i><i></i><i></i></div>'; st.textContent = '';
-  try {
-    const d = await ensureLive();
-    const url = joinUrl() + '?k=' + d.session.pin + '.' + d.session.token;
-    box.innerHTML = Y.qr(url, 6);
-    st.innerHTML = `Kumanda kodu PIN <b class="mono">${d.session.pin}</b> oturumuna bağlı. Telefon ileri/geri tuşu olur.`;
-  } catch (e) { box.innerHTML = ''; st.textContent = e.message; }
-};
+Quiz.livePin = () => liveDb && liveDb.session ? liveDb.session.pin : null;
 
 Quiz.start = async o => {
   opts = o; Y.Sfx.unlock();
@@ -60,7 +51,7 @@ Quiz.start = async o => {
     if (o.demo) { db = DB.make(true); await db.create(); }
     else {
       // aynı oturumda ikinci sınav: eski cevaplar karışmasın diye yeni oturum aç (lobi öncesi katılanlar korunur)
-      if (liveDb && liveDb._used) { liveDb.close(); liveDb = null; ensureLive.seq = null; Y.toast('Yeni sınav oturumu açıldı. Telefon kumandası kullanıyorsanız QR’ı tekrar okutun.', 5000); }
+      if (liveDb && liveDb._used && liveDb.allAnswers().length) { liveDb.close(); liveDb = null; ensureLive.seq = null; Y.toast('Yeni sınav oturumu açıldı (yeni PIN). Telefondaki yönetici paneli yeni oturuma kendiliğinden geçer.', 5000); }
       db = await ensureLive();
       db._used = true;
     }

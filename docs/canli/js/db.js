@@ -140,8 +140,34 @@ function Demo(n = 28){
   };
 }
 
+/* ——— Yönetici anahtarı: oturumun sunucu anahtarı yönetici şifresiyle şifrelenip herkese açık alana konur.
+   Şifreyi bilmeyen anahtarı çözemez, dolayısıyla telefondan sınavı yönetemez. Şifrenin kendisi hiçbir yerde saklanmaz. ——— */
+const te = new TextEncoder(), td = new TextDecoder();
+const b64 = u8 => btoa(String.fromCharCode(...u8)), unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function passKey(pass, salt){
+  const base = await crypto.subtle.importKey('raw', te.encode(pass), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 120000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+async function seal(pass, text){
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await passKey(pass, salt), te.encode(text)));
+  return 'v1:' + b64(new Uint8Array([...salt, ...iv, ...ct]));
+}
+async function unseal(pass, blob){
+  if (!blob || !blob.startsWith('v1:')) return null;
+  try {
+    const u = unb64(blob.slice(3));
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.slice(16, 28) }, await passKey(pass, u.slice(0, 16)), u.slice(28));
+    return td.decode(pt);
+  } catch { return null; }
+}
+async function sha256(s){ return [...new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode(s)))].map(b => b.toString(16).padStart(2, '0')).join(''); }
+// Yönetici şifresinin SHA-256 özeti (şifre kodda açık yazılmaz)
+const ADMIN_HASH = '0cb37e55821fe24a543fbc144f698b11fd562dce00424507dd78e7f33edf2e5e';
+const checkAdmin = async pass => (await sha256(String(pass || '').trim().toLocaleLowerCase('tr'))) === ADMIN_HASH;
+
 window.DB = {
-  hasLive, client, errMsg, loadByPin, AVATARS, rpcRetry,
+  hasLive, client, errMsg, loadByPin, AVATARS, rpcRetry, seal, unseal, checkAdmin,
   make(demo){ return demo || !hasLive ? Demo() : Live(); }
 };
 window.DemoBots = Demo;

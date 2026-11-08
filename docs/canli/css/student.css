@@ -69,7 +69,9 @@ h1.t{font-size:clamp(30px,8vw,40px);letter-spacing:-.03em}
 .conn{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 50px);transform:translateX(-50%);padding:6px 12px;border-radius:999px;background:var(--amber-soft);color:var(--amber);font-size:13px;font-weight:700;display:none}
 .conn.on{display:block}
 /* Yönetici kumandası */
-.remote.admin{grid-template-rows:auto 1.4fr auto auto}
+.remote.admin{grid-template-rows:auto 1.4fr auto auto auto}
+.remote.admin .lo{min-height:44px;font-size:15px;background:transparent;color:var(--ink-3)}
+.remote.admin .lo svg{width:18px;height:18px}
 .remote.admin .rstat{display:flex;flex-direction:column;gap:10px;text-align:center}
 .remote.admin .rk-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .remote.admin .rphase{font-weight:700;color:var(--ink-2)}

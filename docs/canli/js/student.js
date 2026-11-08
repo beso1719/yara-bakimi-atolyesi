@@ -1,4 +1,4 @@
-/* Öğrenci telefonu: katıl → bekle → cevapla → sonuç → final karnesi. ?k=PIN.TOKEN ile sunum kumandası olur. */
+/* Öğrenci telefonu: katıl → bekle → cevapla → sonuç → final karnesi. “Yönetici girişi” (şifreli) ile telefondan sınav yönetimi. */
 (function(){
 const { $, h, icon, esc } = Y;
 const app = $('#app'), qs = new URLSearchParams(location.search);
@@ -9,33 +9,70 @@ const conf = window.confetti ? confetti.create($('#fx'), { resize: true }) : () 
 if (!DB.hasLive) { view(`<div class="center"><h1 class="t">Bağlantı ayarı yok</h1><p class="muted">Bu sınav için çevrimiçi sunucu yapılandırılmamış.</p></div>`); return; }
 const c = DB.client();
 
-/* ———— Yönetici kumandası (?k=PIN.TOKEN): sınavı telefondan başlat / geç / bitir ———— */
-if (qs.get('k')) {
-  const [pin, token] = qs.get('k').split('.');
-  let busy = false, sid = null, cur = null;
-  const send = async (cmd, btn) => {
-    if (busy) return; busy = true; vibrate(25);
-    if (btn) btn.classList.add('sending');
-    const { error } = await DB.rpcRetry('yq_remote', { p_pin: pin, p_token: token, p_cmd: cmd });
-    if (error) Y.toast(DB.errMsg(error)); else Y.toast('Gönderildi ✓', 900);
-    setTimeout(() => { busy = false; btn && btn.classList.remove('sending'); refresh(); }, 600);
+/* ———— Yönetici paneli (şifreli): sınavı telefondan başlat / geç / bitir ————
+   Şifre, sınav ekranının sunucu anahtarını çözer; şifresiz kimse komut gönderemez. */
+const ADM_KEY = 'yara_admin_pass';
+const ssGet = () => { try { return sessionStorage.getItem(ADM_KEY); } catch { return null; } };
+const ssSet = v => { try { v ? sessionStorage.setItem(ADM_KEY, v) : sessionStorage.removeItem(ADM_KEY); } catch {} };
+
+async function findAdminSession(pass, newerThan){
+  let q = c.from('yq_sessions').select('id,pin,deck_pos,status,created_at').not('deck_pos', 'is', null).order('created_at', { ascending: false }).limit(6);
+  if (newerThan) q = q.gt('created_at', newerThan);
+  const { data } = await q;
+  for (const r of data || []) {
+    const t = await DB.unseal(pass, r.deck_pos);
+    if (t) { const [pin, token] = t.split('.'); if (pin === r.pin) return { pin, token, id: r.id, created_at: r.created_at }; }
+  }
+  return null;
+}
+
+function adminLogin(err = ''){
+  view(`<div class="center" style="justify-content:flex-start;padding-top:4vh">
+    <h1 class="t">Yönetici <span class="t-teal">girişi</span></h1>
+    <p class="muted">Sınavı telefondan yönetmek için şifreyi gir.</p>
+  </div>
+  <form class="panel" novalidate>
+    <div class="field"><label for="ap">Şifre</label><input id="ap" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false" required></div>
+    <p class="err" role="alert" style="color:var(--red);font-weight:600;min-height:1.2em">${esc(err)}</p>
+    <button class="btn primary block" type="submit">${icon('shield-check')}Giriş</button>
+    <a href="./" class="muted small" style="display:block;text-align:center;margin-top:12px">← Öğrenci girişine dön</a>
+  </form>`);
+  const f = app.querySelector('form'); f.ap.focus();
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const pass = f.ap.value.trim().toLocaleLowerCase('tr'), btn = f.querySelector('[type=submit]');
+    btn.disabled = true; btn.textContent = 'Kontrol ediliyor…';
+    if (!(await DB.checkAdmin(pass))) { vibrate([80, 40, 80]); return adminLogin('Şifre yanlış.'); }
+    ssSet(pass); adminPanel(pass);
   };
+}
+
+async function adminPanel(pass){
+  let S0 = null, busy = false, cur = null, sid = null, ch = null, lastEnded = 0;
   view(`<div class="remote admin">
-    <div class="panel rstat"><div class="rk-top"><b>Yönetici kumandası</b><span class="chip mono">PIN ${esc(pin)}</span></div>
-      <div class="rphase">Bağlanıyor…</div>
+    <div class="panel rstat"><div class="rk-top"><b>Yönetici paneli</b><span class="chip mono rpin">PIN –</span></div>
+      <div class="rphase">Sınav ekranı aranıyor…</div>
       <div class="rnums"><div><b class="rq">–</b><small>soru</small></div><div><b class="ra">–</b><small>cevaplayan</small></div><div><b class="rp">–</b><small>katılımcı</small></div></div>
       <div class="rbar"><i></i></div>
     </div>
-    <button class="nx" data-cmd="next">…</button>
-    <button class="sk" data-cmd="skip">${icon('fast-forward')}Sıralamayı atla</button>
-    <button class="en" data-cmd="end">${icon('flag')}Sınavı şimdi bitir</button>
+    <button class="nx" disabled>…</button>
+    <button class="sk" hidden>${icon('fast-forward')}Sıralamayı atla</button>
+    <button class="en" hidden>${icon('flag')}Sınavı şimdi bitir</button>
+    <button class="lo">${icon('log-out')}Çıkış</button>
   </div>`);
   const nx = app.querySelector('.nx'), sk = app.querySelector('.sk'), en = app.querySelector('.en');
+  const send = async (cmd, btn) => {
+    if (busy || !S0) return; busy = true; vibrate(25); btn && btn.classList.add('sending');
+    const { error } = await DB.rpcRetry('yq_remote', { p_pin: S0.pin, p_token: S0.token, p_cmd: cmd });
+    if (error) Y.toast(DB.errMsg(error)); else Y.toast('Gönderildi ✓', 900);
+    setTimeout(() => { busy = false; btn && btn.classList.remove('sending'); refresh(); }, 600);
+  };
   nx.onclick = () => send(cur === 'idle' ? 'start' : 'next', nx);
   sk.onclick = () => send('skip', sk);
   en.onclick = () => { if (confirm('Sınav şimdi bitirilsin mi? Sorulan sorularla sonuçlar gösterilir.')) send('end', en); };
+  app.querySelector('.lo').onclick = () => { ssSet(null); location.href = './'; };
   const LBL = {
-    idle: ['play', 'Sınavı başlat', 'Sınav ekranı hazır, lobi açılmadı'],
+    idle: ['play', 'Sınavı başlat', 'Sınav ekranı hazır, lobi kapalı'],
     lobby: ['play', 'Soruları başlat', 'Lobi açık, katılım bekleniyor'],
     get_ready: ['hourglass', 'Geri sayım…', 'Soru geliyor'],
     question: ['square', 'Soruyu bitir', 'Soru açık, cevaplar geliyor'],
@@ -43,10 +80,26 @@ if (qs.get('k')) {
     board: ['arrow-right', 'Sonraki soru', 'Sıralama ekranda'],
     ended: ['chart-column', 'Sonuç analizini aç', 'Sınav bitti']
   };
+  async function attach(found){
+    S0 = found; sid = found.id;
+    if (ch) c.removeChannel(ch);
+    ch = c.channel('yq-adm-' + sid).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'yq_sessions', filter: `id=eq.${sid}` }, () => refresh()).subscribe();
+    app.querySelector('.rpin').textContent = 'PIN ' + found.pin;
+  }
   async function refresh(){
-    const { data: s } = await c.from('yq_sessions').select('id,status,q_index,q_count,q_started_at,q_duration').eq('pin', pin).maybeSingle();
-    if (!s) { app.querySelector('.rphase').textContent = 'Oturum bulunamadı. Sınav ekranındaki yeni QR’ı okut.'; return; }
-    if (!sid) { sid = s.id; c.channel('yq-adm-' + sid).on('postgres_changes', { event: '*', schema: 'public', table: 'yq_sessions', filter: `id=eq.${sid}` }, () => refresh()).subscribe(); }
+    if (!S0) {
+      const f = await findAdminSession(pass);
+      if (!f) { app.querySelector('.rphase').textContent = 'Açık sınav ekranı bulunamadı. Bilgisayarda “Canlı sınav” sayfasını açıp şifreyle girin; burası kendiliğinden bağlanır.'; return; }
+      await attach(f);
+    }
+    const { data: s } = await c.from('yq_sessions').select('status,q_index,q_count').eq('id', sid).maybeSingle();
+    if (!s) { S0 = null; return; }
+    // sınav bitti ya da ekran yenilendi: daha yeni bir oturum açıldıysa ona geç
+    if ((s.status === 'ended' || s.status === 'idle') && Date.now() - lastEnded > 4000) {
+      lastEnded = Date.now();
+      const nf = await findAdminSession(pass, S0.created_at);
+      if (nf) { await attach(nf); Y.toast('Yeni sınav oturumuna geçildi', 1800); return refresh(); }
+    }
     cur = s.status;
     const [{ count: np }, { count: na }] = await Promise.all([
       c.from('yq_players').select('id', { count: 'exact', head: true }).eq('session_id', sid),
@@ -62,13 +115,14 @@ if (qs.get('k')) {
     app.querySelector('.rq').textContent = s.q_index >= 0 ? `${s.q_index + 1}/${s.q_count}` : `0/${s.q_count || '–'}`;
     app.querySelector('.rp').textContent = np ?? 0;
     app.querySelector('.ra').textContent = s.status === 'question' || s.status === 'reveal' ? `${na ?? 0}` : '–';
-    const bar = app.querySelector('.rbar i');
-    bar.style.width = (s.status === 'question' && np ? Math.min(100, (na / np) * 100) : 0) + '%';
+    app.querySelector('.rbar i').style.width = (s.status === 'question' && np ? Math.min(100, (na / np) * 100) : 0) + '%';
     Y.icons(app);
   }
-  refresh(); setInterval(() => { if (!busy) refresh().catch(() => {}); }, 1500);
-  return;
+  refresh().catch(() => {});
+  setInterval(() => { if (!busy) refresh().catch(() => {}); }, 1500);
 }
+
+if (qs.has('yonetici')) { const p = ssGet(); if (p) adminPanel(p); else adminLogin(); return; }
 
 /* ———— Katılım ———— */
 const KEY = pin => 'yara_player_' + pin;
@@ -86,7 +140,8 @@ function joinForm(pin = '', err = ''){
     <div class="field"><label>Avatar</label><div class="avs">${DB.AVATARS.map(a => `<button type="button" aria-pressed="${a === av}" aria-label="Avatar ${a}">${a}</button>`).join('')}</div></div>
     <p class="err" role="alert" style="color:var(--red);font-weight:600;min-height:1.2em">${esc(err)}</p>
     <button class="btn primary block" type="submit">${icon('log-in')}Katıl</button>
-  </form>`);
+  </form>
+  <a href="?yonetici" class="muted small" style="display:block;text-align:center;margin-top:14px;opacity:.7">Yönetici girişi</a>`);
   app.querySelectorAll('.avs button').forEach(b => b.onclick = () => { av = b.textContent; app.querySelectorAll('.avs button').forEach(x => x.setAttribute('aria-pressed', x === b)); vibrate(10); });
   const f = app.querySelector('form');
   if (!pin) f.pin.focus(); else if (!f.nick.value) f.nick.focus();

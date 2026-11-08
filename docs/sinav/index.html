@@ -44,6 +44,13 @@
   .qctrl .btn.danger{color:var(--coral)}
   .qctrl .btn:disabled{opacity:.5;cursor:default}
   .rq{z-index:120}
+  .gate{z-index:200;background:var(--bg)}
+  .gate[hidden]{display:none}
+  .gate a.btn,.back{text-decoration:none}
+  .gate .ic{display:grid;place-items:center;width:56px;height:56px;border-radius:16px;background:var(--teal-soft);color:var(--teal)}
+  .gate .ic svg{width:28px;height:28px}
+  .gate input{width:100%;margin-top:14px;font:600 18px var(--f-body);color:var(--ink);background:var(--surface-solid);border:1px solid var(--stroke-2);border-radius:12px;padding:12px 14px}
+  .gate input:focus{outline:2px solid var(--teal);outline-offset:1px}
   .rq .qr-wrap{background:#fff;padding:14px;border-radius:16px;display:inline-block;margin:6px auto 10px}
   .rq .qr-wrap svg{display:block;width:240px;height:240px}
   .rq ol{text-align:left;color:var(--ink-2);font-size:15px;padding-left:20px;margin:6px 0 0}
@@ -90,11 +97,20 @@
 <div id="rq" class="overlay rq" hidden>
   <div class="overlay-card narrow center">
     <div class="overlay-head"><h2>Telefondan yönet</h2><button class="icon-btn" id="rqClose" aria-label="Kapat"><i data-lucide="x"></i></button></div>
-    <p class="muted">Bu kodu <b>yalnızca yönetici</b> okutsun. Öğrenciler okutmasın: bu kumanda sınavı başlatır, soruları geçer ve bitirir.</p>
-    <div class="qr-wrap" id="rqQr"></div>
-    <p class="muted small" id="rqSt"></p>
-    <ol><li>Telefonda “Sınavı başlat” lobiyi açar.</li><li>Lobide “Soruları başlat”, soru açıkken “Soruyu bitir”: herkesi beklemeden geçer.</li><li>“Sınavı şimdi bitir” o ana kadarki sorularla sonuçları gösterir.</li></ol>
+    <p class="muted">Ekranda yönetici QR’ı <b>yoktur</b>; telefon paneli yalnızca şifreyle açılır.</p>
+    <ol><li>Telefonda öğrencilerle aynı adresi aç: <b class="mono" id="rqUrl"></b></li><li>Sayfanın altındaki <b>“Yönetici girişi”</b>ne dokun ve şifreyi gir.</li><li>Panel bu ekrana kendiliğinden bağlanır: başlat, soruyu bitir, sıralamayı atla, sınavı bitir.</li></ol>
+    <p class="muted small" id="rqSt" style="margin-top:12px"></p>
   </div>
+</div>
+<div id="gate" class="overlay gate">
+  <form class="overlay-card narrow center" id="gateForm" autocomplete="off">
+    <div class="ic" style="margin:0 auto 6px"><i data-lucide="shield-check"></i></div>
+    <h2 style="font-size:26px">Yönetici girişi</h2>
+    <p class="muted">Canlı sınav ekranı yalnız yönetici içindir. Şifreyi girin.</p>
+    <input id="gatePass" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false" placeholder="Şifre" aria-label="Yönetici şifresi">
+    <p id="gateErr" role="alert" style="color:var(--red);font-weight:600;min-height:1.3em;margin:6px 0"></p>
+    <div class="actions" style="gap:10px"><a class="btn" href="../">Oyuna dön</a><button class="btn primary" type="submit"><i data-lucide="log-in"></i>Giriş</button></div>
+  </form>
 </div>
 <section id="analysis" class="analysis" hidden></section>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -137,14 +153,12 @@
 
   const Home = window.Home = {
     async showRemote(){
-      const pop = $('#rq'), box = $('#rqQr'), st = $('#rqSt');
-      pop.hidden = false; box.innerHTML = '<span class="muted">Hazırlanıyor…</span>'; st.textContent = ''; Y.icons(pop);
-      try {
-        await Quiz.ensureLive();
-        const url = Quiz.remoteUrl();
-        box.innerHTML = Y.qr(url, 6);
-        st.innerHTML = 'Bağlı oturum PIN: <b class="mono">' + url.split('k=')[1].split('.')[0] + '</b>. Yeni bir sınav başlatırsanız kodu tekrar okutun.';
-      } catch (e) { box.innerHTML = ''; st.textContent = e.message; }
+      const pop = $('#rq'), st = $('#rqSt');
+      pop.hidden = false; Y.icons(pop);
+      $('#rqUrl').textContent = new URL('../katil/', location.href.split('?')[0]).href.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      st.textContent = 'Bağlanılıyor…';
+      try { await Quiz.ensureLive(); st.innerHTML = 'Hazır. Şu anki oturum PIN: <b class="mono">' + Quiz.livePin() + '</b>'; }
+      catch (e) { st.textContent = e.message; }
     },
     startFromRemote(){ $('#rq').hidden = true; Analytics.close(); Quiz.start({ ...opts(), demo: false }); },
     show(){
@@ -174,6 +188,7 @@
   if (!DB.hasLive) $('#live').title = 'Supabase ayarı yok; yalnız demo çalışır.';
 
   addEventListener('keydown', e => {
+    if (!$('#gate').hidden) return;
     if (e.target.matches('input,select,textarea')) return;
     if (e.key === 'Escape' && !$('#rq').hidden) { $('#rq').hidden = true; return; }
     if (Quiz.active) return Quiz.key(e);
@@ -182,8 +197,28 @@
 
   Home.show(); Home.syncTools();
   const qs = new URLSearchParams(location.search);
-  if (qs.get('analiz')) Analytics.openPin(qs.get('analiz'));
-  if (qs.get('demo') === '1') Quiz.start({ ...opts(), demo: true });
+  const ssKey = 'yara_admin_pass';
+  const ssGet = () => { try { return sessionStorage.getItem(ssKey); } catch { return null; } };
+  const unlock = pass => {
+    Quiz.adminPass = pass;
+    try { sessionStorage.setItem(ssKey, pass); } catch {}
+    $('#gate').hidden = true;
+    // Telefon paneli hemen bulabilsin diye canlı oturumu arka planda hazırla
+    if (DB.hasLive) Quiz.ensureLive().catch(() => {});
+    if (qs.get('analiz')) Analytics.openPin(qs.get('analiz'));
+    if (qs.get('demo') === '1') Quiz.start({ ...opts(), demo: true });
+  };
+  $('#gateForm').onsubmit = async e => {
+    e.preventDefault();
+    const pass = $('#gatePass').value.trim().toLocaleLowerCase('tr');
+    if (await DB.checkAdmin(pass)) unlock(pass);
+    else { $('#gateErr').textContent = 'Şifre yanlış.'; $('#gatePass').select(); }
+  };
+  (async () => {
+    const saved = ssGet();
+    if (saved && await DB.checkAdmin(saved)) unlock(saved);
+    else { Y.icons($('#gate')); $('#gatePass').focus(); }
+  })();
 })();
 </script>
 </body>
