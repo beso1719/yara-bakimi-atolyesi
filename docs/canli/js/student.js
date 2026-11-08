@@ -9,25 +9,64 @@ const conf = window.confetti ? confetti.create($('#fx'), { resize: true }) : () 
 if (!DB.hasLive) { view(`<div class="center"><h1 class="t">Bağlantı ayarı yok</h1><p class="muted">Bu sınav için çevrimiçi sunucu yapılandırılmamış.</p></div>`); return; }
 const c = DB.client();
 
-/* ———— Kumanda ———— */
+/* ———— Yönetici kumandası (?k=PIN.TOKEN): sınavı telefondan başlat / geç / bitir ———— */
 if (qs.get('k')) {
   const [pin, token] = qs.get('k').split('.');
-  const send = async cmd => { vibrate(20); const { error } = await c.rpc('yq_remote', { p_pin: pin, p_token: token, p_cmd: cmd }); if (error) Y.toast(DB.errMsg(error)); };
-  view(`<div class="remote">
-    <div class="panel" style="text-align:center"><b>Sunum kumandası</b><div class="pos muted small">PIN ${esc(pin)}</div></div>
-    <button class="pv" aria-label="Önceki">${icon('chevron-left')}Geri</button>
-    <button class="nx" aria-label="Sonraki">İleri${icon('chevron-right')}</button>
-    <button class="qz" style="min-height:56px;font-size:18px">${icon('radio')}Sınav sahnesine git</button>
+  let busy = false, sid = null, cur = null;
+  const send = async (cmd, btn) => {
+    if (busy) return; busy = true; vibrate(25);
+    if (btn) btn.classList.add('sending');
+    const { error } = await DB.rpcRetry('yq_remote', { p_pin: pin, p_token: token, p_cmd: cmd });
+    if (error) Y.toast(DB.errMsg(error)); else Y.toast('Gönderildi ✓', 900);
+    setTimeout(() => { busy = false; btn && btn.classList.remove('sending'); refresh(); }, 600);
+  };
+  view(`<div class="remote admin">
+    <div class="panel rstat"><div class="rk-top"><b>Yönetici kumandası</b><span class="chip mono">PIN ${esc(pin)}</span></div>
+      <div class="rphase">Bağlanıyor…</div>
+      <div class="rnums"><div><b class="rq">–</b><small>soru</small></div><div><b class="ra">–</b><small>cevaplayan</small></div><div><b class="rp">–</b><small>katılımcı</small></div></div>
+      <div class="rbar"><i></i></div>
+    </div>
+    <button class="nx" data-cmd="next">…</button>
+    <button class="sk" data-cmd="skip">${icon('fast-forward')}Sıralamayı atla</button>
+    <button class="en" data-cmd="end">${icon('flag')}Sınavı şimdi bitir</button>
   </div>`);
-  app.querySelector('.nx').onclick = () => send('next');
-  app.querySelector('.pv').onclick = () => send('prev');
-  app.querySelector('.qz').onclick = () => send('quiz');
-  const pos = app.querySelector('.pos');
-  c.from('yq_sessions').select('id,deck_pos').eq('pin', pin).single().then(({ data }) => {
-    if (!data) return;
-    if (data.deck_pos) pos.textContent = data.deck_pos;
-    c.channel('yq-remote-' + data.id).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'yq_sessions', filter: `id=eq.${data.id}` }, p => { if (p.new.deck_pos) pos.textContent = p.new.deck_pos; }).subscribe();
-  });
+  const nx = app.querySelector('.nx'), sk = app.querySelector('.sk'), en = app.querySelector('.en');
+  nx.onclick = () => send(cur === 'idle' ? 'start' : 'next', nx);
+  sk.onclick = () => send('skip', sk);
+  en.onclick = () => { if (confirm('Sınav şimdi bitirilsin mi? Sorulan sorularla sonuçlar gösterilir.')) send('end', en); };
+  const LBL = {
+    idle: ['play', 'Sınavı başlat', 'Sınav ekranı hazır, lobi açılmadı'],
+    lobby: ['play', 'Soruları başlat', 'Lobi açık, katılım bekleniyor'],
+    get_ready: ['hourglass', 'Geri sayım…', 'Soru geliyor'],
+    question: ['square', 'Soruyu bitir', 'Soru açık, cevaplar geliyor'],
+    reveal: ['list-ordered', 'Sıralamayı göster', 'Cevap açıklandı'],
+    board: ['arrow-right', 'Sonraki soru', 'Sıralama ekranda'],
+    ended: ['chart-column', 'Sonuç analizini aç', 'Sınav bitti']
+  };
+  async function refresh(){
+    const { data: s } = await c.from('yq_sessions').select('id,status,q_index,q_count,q_started_at,q_duration').eq('pin', pin).maybeSingle();
+    if (!s) { app.querySelector('.rphase').textContent = 'Oturum bulunamadı. Sınav ekranındaki yeni QR’ı okut.'; return; }
+    if (!sid) { sid = s.id; c.channel('yq-adm-' + sid).on('postgres_changes', { event: '*', schema: 'public', table: 'yq_sessions', filter: `id=eq.${sid}` }, () => refresh()).subscribe(); }
+    cur = s.status;
+    const [{ count: np }, { count: na }] = await Promise.all([
+      c.from('yq_players').select('id', { count: 'exact', head: true }).eq('session_id', sid),
+      s.q_index >= 0 ? c.from('yq_answers').select('id', { count: 'exact', head: true }).eq('session_id', sid).eq('q_index', s.q_index) : Promise.resolve({ count: 0 })
+    ]);
+    const lastQ = s.q_index >= s.q_count - 1;
+    let [ic, t, ph] = LBL[s.status] || ['circle', '…', s.status];
+    if (s.status === 'board' && lastQ) [ic, t] = ['trophy', 'Podyuma geç'];
+    nx.innerHTML = icon(ic) + t; nx.disabled = s.status === 'get_ready';
+    sk.hidden = !((s.status === 'reveal' || s.status === 'board') && !lastQ);
+    en.hidden = s.status === 'ended' || s.status === 'idle';
+    app.querySelector('.rphase').textContent = ph;
+    app.querySelector('.rq').textContent = s.q_index >= 0 ? `${s.q_index + 1}/${s.q_count}` : `0/${s.q_count || '–'}`;
+    app.querySelector('.rp').textContent = np ?? 0;
+    app.querySelector('.ra').textContent = s.status === 'question' || s.status === 'reveal' ? `${na ?? 0}` : '–';
+    const bar = app.querySelector('.rbar i');
+    bar.style.width = (s.status === 'question' && np ? Math.min(100, (na / np) * 100) : 0) + '%';
+    Y.icons(app);
+  }
+  refresh(); setInterval(() => { if (!busy) refresh().catch(() => {}); }, 1500);
   return;
 }
 
@@ -180,6 +219,12 @@ async function boardV(){
 async function final(){
   clearInterval(pollT);
   const [r, n] = await Promise.all([myRow(), playerCount()]);
+  const ak = S && S.q_options && !Array.isArray(S.q_options) && S.q_options.key;
+  if (ak) {
+    Object.keys(hist).forEach(k => { if (+k >= ak.length) delete hist[k]; }); // erken bitirilen sınavda sorulmayan soru
+    ak.forEach((c, qi) => { const x = hist[qi] || {}; hist[qi] = { ...x, topic: S.q_options.topics[qi], correct: x.choice != null && x.choice === c, answered: x.choice != null }; });
+    Y.store.set('yara_hist_' + me.pin, hist);
+  }
   const topics = {};
   Object.values(hist).forEach(x => { if (!x.topic || x.correct == null) return; const t = (topics[x.topic] ||= { ok: 0, all: 0 }); t.all++; if (x.correct) t.ok++; });
   const weak = Object.entries(topics).filter(([, t]) => t.ok < t.all);

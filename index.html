@@ -143,6 +143,10 @@ p{margin:0}
 .final-card.live-card{border-color:color-mix(in oklab,var(--teal) 45%,var(--line))}
 .final-card.live-card .lvl-ic{--c:#0A7A72}
 a.btn{text-decoration:none}
+.live-pill{text-decoration:none;color:inherit;gap:7px;font-weight:700}
+.live-pill:hover{border-color:var(--teal)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#E4552F;box-shadow:0 0 0 3px rgba(228,85,47,.2)}
+@media (max-width:520px){.live-pill{font-size:0;gap:0}.live-pill .live-dot{margin:0}}
 .foot-note{margin-top:28px;font-size:.82rem;color:var(--ink-2);max-width:80ch}
 
 /* ---------- hatırlatma ---------- */
@@ -420,6 +424,7 @@ a.btn{text-decoration:none}
       <b>Yara Bakımı Atölyesi</b>
     </button>
     <span class="bar-sp"></span>
+    <a class="pill live-pill" href="sinav/" title="Canlı mini sınavı aç (yönetici ekranı)"><span class="live-dot" aria-hidden="true"></span>Canlı sınav</a>
     <span class="pill" id="starPill" title="Toplam yıldız"></span>
     <button class="icon-btn" id="soundBtn" type="button" aria-label="Sesi kapat"></button>
   </div>

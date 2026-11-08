@@ -35,10 +35,13 @@ async function ensureLive(){
   return liveDb;
 }
 function remoteCmd(cmd){
-  if (cmd === 'next') Quiz.active ? advance() : Deck.next();
-  else if (cmd === 'prev') { if (!Quiz.active) Deck.prev(); }
-  else if (cmd === 'quiz') { if (!Quiz.active) Deck.go('sinav'); }
+  if (cmd === 'next') { if (Quiz.active) advance(); else if (window.Home && Home.startFromRemote) Home.startFromRemote(); }
+  else if (cmd === 'skip') { if (Quiz.active) skipBoard(); }
+  else if (cmd === 'end') { if (Quiz.active) finishEarly(); }
+  else if (cmd === 'start') { if (!Quiz.active && window.Home && Home.startFromRemote) Home.startFromRemote(); }
 }
+Quiz.ensureLive = ensureLive;
+Quiz.remoteUrl = () => liveDb && liveDb.session ? joinUrl() + '?k=' + liveDb.session.pin + '.' + liveDb.session.token : null;
 
 Quiz.openRemote = async () => {
   const box = $('#remote-qr'), st = $('#remote-status');
@@ -56,14 +59,16 @@ Quiz.start = async o => {
   try {
     if (o.demo) { db = DB.make(true); await db.create(); }
     else {
-      // aynı oturumda ikinci sınav: eski oyuncu/cevaplar karışmasın diye yeni oturum aç
-      if (liveDb && (liveDb.players().length || liveDb.allAnswers().length)) { liveDb.close(); liveDb = null; ensureLive.seq = null; }
+      // aynı oturumda ikinci sınav: eski cevaplar karışmasın diye yeni oturum aç (lobi öncesi katılanlar korunur)
+      if (liveDb && liveDb._used) { liveDb.close(); liveDb = null; ensureLive.seq = null; Y.toast('Yeni sınav oturumu açıldı. Telefon kumandası kullanıyorsanız QR’ı tekrar okutun.', 5000); }
       db = await ensureLive();
+      db._used = true;
     }
   } catch (e) { Y.toast(e.message + (DB.hasLive ? '' : ' Demo sınıf ile prova yapabilirsiniz.'), 5000); return; }
   order = (o.set === 'short' ? QUIZ.short : QUIZ.questions.map((_, i) => i)).slice();
   pos = -1; scores.clear(); prevRanks = new Map();
   Quiz.active = true; root().hidden = false; document.body.classList.add('quiz-on');
+  startCtrl();
   FX.intensity(1.6);
   await db.host({ status: 'lobby', q_index: -1, q_count: order.length, q_duration: o.time, qset: order, reveal_correct: null, q_text: null, q_options: null });
   lobby();
@@ -72,7 +77,7 @@ Quiz.start = async o => {
 function lobby(){
   phase = 'lobby';
   const url = joinUrl(), full = url + '?pin=' + db.session.pin;
-  const el = stage(`${topBar('<span class="kbd">Boşluk</span> başlat · <span class="kbd">Esc</span> çık')}
+  const el = stage(`${topBar('<span class="kbd">Boşluk</span> başlat · <span class="kbd">S</span> sıralamayı atla · <span class="kbd">E</span> bitir')}
   <div class="lobby">
     <div class="glass join-card">
       <div class="kicker">Telefonla katıl</div>
@@ -125,6 +130,62 @@ function advance(){
   else if (phase === 'podium-done') showAnalysis();
 }
 Quiz.advance = advance;
+
+/* Sıralamayı atlayıp doğrudan sonraki soruya geç */
+function skipBoard(){
+  if (phase === 'reveal' || phase === 'board') nextQuestion();
+  else advance();
+}
+Quiz.skipBoard = skipBoard;
+
+/* Sınavı istenen anda bitir: sorulmuş sorularla podyum + analiz */
+async function finishEarly(){
+  if (!Quiz.active || phase === 'podium' || phase === 'podium-done' || phase === 'off') return;
+  if (phase === 'lobby') { exit(); return; }
+  if (phase === 'question') await endQuestion();
+  if (phase === 'ready') pos--; // geri sayımdaki soru sorulmamış sayılır
+  order = order.slice(0, Math.max(0, pos + 1));
+  if (!order.length) { exit(); Y.toast('Hiç soru sorulmadan sınav kapatıldı.'); return; }
+  db.host({ qset: order, q_count: order.length }).catch(() => {});
+  pos = order.length;
+  podium();
+}
+Quiz.finishEarly = finishEarly;
+
+/* Ekrandaki yönetici çubuğu (sahne ölçeğinden bağımsız, her zaman tıklanabilir) */
+let ctrlT = 0;
+const CTRL = {
+  lobby: ['play', 'Sınavı başlat'], ready: ['skip-forward', 'Bekleniyor…'], question: ['square', 'Soruyu bitir'],
+  reveal: ['list-ordered', 'Sıralamayı göster'], board: ['arrow-right', 'Sonraki soru'], podium: ['loader', 'Podyum…'], 'podium-done': ['chart-column', 'Sonuç analizi']
+};
+function startCtrl(){
+  const bar = document.getElementById('qctrl'); if (!bar) return;
+  bar.hidden = false;
+  bar.innerHTML = `<button class="btn primary" data-c="next"></button><button class="btn" data-c="skip">${icon('fast-forward')}Sıralamayı atla</button><button class="btn" data-c="remote">${icon('smartphone')}Telefondan yönet</button><button class="btn danger" data-c="end">${icon('flag')}Sınavı bitir</button>`;
+  bar.querySelector('[data-c="next"]').onclick = () => advance();
+  bar.querySelector('[data-c="skip"]').onclick = () => skipBoard();
+  bar.querySelector('[data-c="end"]').onclick = () => { if (phase === 'lobby' || confirm('Sınav şimdi bitirilsin mi? Sorulan sorularla sonuçlar gösterilir.')) finishEarly(); };
+  bar.querySelector('[data-c="remote"]').onclick = () => window.Home && Home.showRemote();
+  let last = '';
+  clearInterval(ctrlT);
+  ctrlT = setInterval(() => {
+    if (!Quiz.active) return stopCtrl();
+    const lastQ = pos >= order.length - 1;
+    let [ic, t] = CTRL[phase] || ['circle', '…'];
+    if (phase === 'board' && lastQ) [ic, t] = ['trophy', 'Podyuma geç'];
+    if (phase === 'reveal' && lastQ) [ic, t] = ['list-ordered', 'Son sıralama'];
+    const showSkip = (phase === 'reveal' || phase === 'board') && !lastQ;
+    const key = phase + '|' + t + '|' + showSkip;
+    if (key === last) return; last = key;
+    const nx = bar.querySelector('[data-c="next"]');
+    nx.innerHTML = icon(ic) + t; nx.disabled = phase === 'ready' || phase === 'podium';
+    bar.querySelector('[data-c="skip"]').hidden = !showSkip;
+    bar.querySelector('[data-c="end"]').hidden = phase === 'podium' || phase === 'podium-done';
+    bar.querySelector('[data-c="remote"]').hidden = db && db.mode === 'demo';
+    Y.icons(bar);
+  }, 250);
+}
+function stopCtrl(){ clearInterval(ctrlT); const bar = document.getElementById('qctrl'); if (bar) { bar.hidden = true; bar.innerHTML = ''; } }
 
 async function nextQuestion(){
   pos++;
@@ -265,7 +326,8 @@ function board(){
 /* ——— Podyum ——— */
 async function podium(){
   phase = 'podium';
-  db.host({ status: 'ended' }).catch(() => {});
+  // Bitişte cevap anahtarı telefona gider: açıklama ekranını kaçıran (ya da erken bitirilen) öğrencinin karnesi de tamamlanır
+  db.host({ status: 'ended', q_count: order.length, q_options: { key: order.map(i => QUIZ.questions[i].correct), topics: order.map(i => QUIZ.topics[QUIZ.questions[i].topic]) } }).catch(() => {});
   saveResult();
   const pmap = new Map(db.players().map(p => [p.id, p]));
   const top = [...scores].filter(([id]) => pmap.has(id)).sort((a, b) => b[1].score - a[1].score || a[1].ms - b[1].ms).slice(0, 3);
@@ -308,7 +370,7 @@ function showAnalysis(){ const r = Quiz.lastResult; exit(true); Analytics.open(r
 
 function exit(keepSession){
   phase = 'off'; Quiz.active = false; cancelAnimationFrame(timerRaf); clearTimeout(autoEnd);
-  root().hidden = true; root().innerHTML = ''; document.body.classList.remove('quiz-on');
+  root().hidden = true; root().innerHTML = ''; document.body.classList.remove('quiz-on'); stopCtrl();
   FX.intensity(1);
   if (db && db.mode === 'demo') db.close();
   else if (db && pos < order.length && !keepSession) db.host({ status: 'idle', q_index: -1 }).catch(() => {});
@@ -319,6 +381,8 @@ Quiz.key = e => {
   const k = e.key;
   if (k === 'Escape') { e.preventDefault(); if (phase === 'podium' || phase === 'podium-done' || confirm('Sınavdan çıkılsın mı?')) exit(); return; }
   if ([' ', 'Enter', 'ArrowRight', 'PageDown'].includes(k)) { e.preventDefault(); advance(); }
+  else if (k === 's' || k === 'S') skipBoard();
+  else if (k === 'e' || k === 'E') { if (phase === 'lobby' || confirm('Sınav şimdi bitirilsin mi?')) finishEarly(); }
   else if (k === 'a' || k === 'A') Deck.actions.sound();
   else if (k === 'f' || k === 'F') Deck.actions.fullscreen();
 };

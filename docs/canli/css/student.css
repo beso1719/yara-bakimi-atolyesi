@@ -68,3 +68,19 @@ h1.t{font-size:clamp(30px,8vw,40px);letter-spacing:-.03em}
 .remote .pos{font-weight:700;color:var(--ink-2);text-align:center}
 .conn{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 50px);transform:translateX(-50%);padding:6px 12px;border-radius:999px;background:var(--amber-soft);color:var(--amber);font-size:13px;font-weight:700;display:none}
 .conn.on{display:block}
+/* Yönetici kumandası */
+.remote.admin{grid-template-rows:auto 1.4fr auto auto}
+.remote.admin .rstat{display:flex;flex-direction:column;gap:10px;text-align:center}
+.remote.admin .rk-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.remote.admin .rphase{font-weight:700;color:var(--ink-2)}
+.remote.admin .rnums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.remote.admin .rnums b{display:block;font:800 30px var(--f-display);color:var(--ink)}
+.remote.admin .rnums small{color:var(--ink-3);font-size:12px}
+.remote.admin .rbar{height:8px;border-radius:8px;background:var(--surface-2);overflow:hidden}
+.remote.admin .rbar i{display:block;height:100%;width:0;background:var(--teal);transition:width .4s}
+.remote.admin .sk,.remote.admin .en{min-height:64px;font-size:19px}
+.remote.admin .sk svg,.remote.admin .en svg{width:24px;height:24px}
+.remote.admin .en{color:var(--coral);border-color:color-mix(in oklab,var(--coral) 40%,transparent)}
+.remote.admin button[hidden]{display:none}
+.remote.admin button:disabled{opacity:.5}
+.remote.admin button.sending{opacity:.6;transform:scale(.98)}
